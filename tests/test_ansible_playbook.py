@@ -26,14 +26,13 @@ def test_bar_fixture(testdir):
 
 
 def test_help_message(testdir):
-    result = testdir.runpytest(
-        '--help',
-    )
+    result = testdir.runpytest('--help')
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
         'ansible-playbook:',
-        '*--foo=DEST_FOO*Set the value for the fixture "bar".',
-    ])
+        '*--ansible-playbook-directory=PLAYBOOK_DIR*',
+        '*--ansible-playbook-inventory=INVENTORY_FILE*',
+        ])
 
 
 def test_hello_ini_setting(testdir):
