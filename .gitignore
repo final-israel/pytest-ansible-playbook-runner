@@ -68,3 +68,7 @@ target/
 # pyenv
 .python-version
 
+# vim temporary and swap files
+*~
+*.swp
+*.swo
