@@ -5,10 +5,6 @@ pytest-ansible-playbook
     :target: https://travis-ci.org/mbukatov/pytest-ansible-playbook
     :alt: See Build Status on Travis CI
 
-.. image:: https://ci.appveyor.com/api/projects/status/github/mbukatov/pytest-ansible-playbook?branch=master
-    :target: https://ci.appveyor.com/project/mbukatov/pytest-ansible-playbook/branch/master
-    :alt: See Build Status on AppVeyor
-
 Pytest fixture which runs given ansible playbook file.
 
 ----
