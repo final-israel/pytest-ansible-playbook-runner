@@ -19,6 +19,11 @@ run ansible playbook file directly.
 Initial structure of this repository was generated with `Cookiecutter`_
 along with `@hackebrot`_'s `Cookiecutter-pytest-plugin`_ template.
 
+.. note::
+
+    Only very simple version of ``ansible_playbook`` fixture is implemented
+    without most of the features described there.
+
 
 Features
 --------
