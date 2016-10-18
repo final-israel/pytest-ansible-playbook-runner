@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 
 
-import pytest
-
-
 def pytest_addoption(parser):
     group = parser.getgroup('ansible-playbook')
     group.addoption(
@@ -20,8 +17,3 @@ def pytest_addoption(parser):
         metavar="INVENTORY_FILE",
         help='Ansible inventory file.',
         )
-
-
-@pytest.fixture
-def bar(request):
-    return request.config.option.dest_foo
