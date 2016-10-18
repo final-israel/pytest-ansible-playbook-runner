@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 
 
+from __future__ import print_function
+import subprocess
+
+import pytest
+
+
 def pytest_addoption(parser):
     group = parser.getgroup('ansible-playbook')
     group.addoption(
@@ -11,9 +17,32 @@ def pytest_addoption(parser):
         help='Directory where ansible playbooks are stored.',
         )
     group.addoption(
+        '--ansible-playbook',
+        action='store',
+        dest='ansible_playbook_file',
+        metavar="PLAYBOOK_FILE",
+        help='Ansible playbook file.',
+        )
+    group.addoption(
         '--ansible-playbook-inventory',
         action='store',
         dest='ansible_playbook_inventory',
         metavar="INVENTORY_FILE",
         help='Ansible inventory file.',
         )
+
+
+@pytest.fixture
+def ansible_playbook(request):
+    """
+    Pytest fixture which runs given ansible playbook. When ansible returns
+    nonzero return code, the test case which uses this fixture is not
+    executed and ends in ``ERROR`` state.
+    """
+    ansible_command = [
+        "ansible-playbook",
+        "-vv",
+        "-i", request.config.option.ansible_playbook_inventory,
+        request.config.option.ansible_playbook_file,
+        ]
+    subprocess.check_call(ansible_command)
