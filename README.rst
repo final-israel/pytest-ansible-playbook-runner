@@ -1,10 +1,6 @@
 pytest-ansible-playbook
 ===================================
 
-.. image:: https://travis-ci.org/mbukatov/pytest-ansible-playbook.svg?branch=master
-    :target: https://travis-ci.org/mbukatov/pytest-ansible-playbook
-    :alt: See Build Status on Travis CI
-
 This repository contains `pytest`_ `plugin`_ which provides an easy way
 to generate fixtures for running particular `ansible playbooks`_, so that you
 can run full playbook during setup phase of a test case. This is useful when
