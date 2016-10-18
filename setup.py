@@ -19,7 +19,7 @@ setup(
     maintainer='Martin Bukatovič',
     maintainer_email='mbukatov@redhat.com',
     license='GNU GPL v3.0',
-    url='https://github.com/mbukatov/pytest-ansible-playbook',
+    url='https://gitlab.com/mbukatov/pytest-ansible-playbook',
     description='Pytest fixture which runs given ansible playbook file.',
     long_description=read('README.rst'),
     py_modules=['pytest_ansible_playbook'],

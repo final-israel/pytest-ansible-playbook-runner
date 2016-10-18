@@ -114,7 +114,7 @@ Issues
 If you encounter any problems, please `file an issue`_ along with a detailed
 description.
 
-.. _`file an issue`: TODO
+.. _`file an issue`: https://gitlab.com/mbukatov/pytest-ansible-playbook/issues
 .. _`Cookiecutter`: https://github.com/audreyr/cookiecutter
 .. _`@hackebrot`: https://github.com/hackebrot
 .. _`GNU GPL v3.0`: http://www.gnu.org/licenses/gpl-3.0.txt
