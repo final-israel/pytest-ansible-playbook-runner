@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+Implementation of pytest-ansible-playbook plugin.
+"""
 
 
 from __future__ import print_function
@@ -8,6 +11,9 @@ import pytest
 
 
 def pytest_addoption(parser):
+    """
+    Define py.test command line options for this plugin.
+    """
     group = parser.getgroup('ansible-playbook')
     group.addoption(
         '--ansible-playbook-directory',
