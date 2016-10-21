@@ -18,16 +18,9 @@ def pytest_addoption(parser):
     group.addoption(
         '--ansible-playbook-directory',
         action='store',
-        dest='ansible_playbook_dir',
+        dest='ansible_playbook_directory',
         metavar="PLAYBOOK_DIR",
         help='Directory where ansible playbooks are stored.',
-        )
-    group.addoption(
-        '--ansible-playbook',
-        action='store',
-        dest='ansible_playbook_file',
-        metavar="PLAYBOOK_FILE",
-        help='Ansible playbook file.',
         )
     group.addoption(
         '--ansible-playbook-inventory',
@@ -45,10 +38,22 @@ def ansible_playbook(request):
     nonzero return code, the test case which uses this fixture is not
     executed and ends in ``ERROR`` state.
     """
+    marker = request.node.get_marker('ansible_playbook')
+    if marker is None:
+        msg = (
+            "ansible playbook not specified for the test case, "
+            "please add ``@pytest.mark.ansible_playbook('playbook.yml')``")
+        raise Exception(msg)
+    else:
+        # TODO: error checking (raise some meaningfull exception)
+        # TODO: run multiple playbooks?
+        playbook_file = marker.args[0]
     ansible_command = [
         "ansible-playbook",
         "-vv",
         "-i", request.config.option.ansible_playbook_inventory,
-        request.config.option.ansible_playbook_file,
+        playbook_file,
         ]
-    subprocess.check_call(ansible_command)
+    subprocess.check_call(
+        ansible_command,
+        cwd=request.config.option.ansible_playbook_directory)
