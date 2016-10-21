@@ -42,18 +42,24 @@ def ansible_playbook(request):
     if marker is None:
         msg = (
             "ansible playbook not specified for the test case, "
-            "please add ``@pytest.mark.ansible_playbook('playbook.yml')``")
+            "please add a decorator like this one "
+            "``@pytest.mark.ansible_playbook('playbook.yml')`` "
+            "for ansible_playbook fixture to know which playbook to use")
         raise Exception(msg)
-    else:
-        # TODO: error checking (raise some meaningfull exception)
-        # TODO: run multiple playbooks?
-        playbook_file = marker.args[0]
-    ansible_command = [
-        "ansible-playbook",
-        "-vv",
-        "-i", request.config.option.ansible_playbook_inventory,
-        playbook_file,
-        ]
-    subprocess.check_call(
-        ansible_command,
-        cwd=request.config.option.ansible_playbook_directory)
+    if len(marker.args) == 0:
+        msg = (
+            "no playbook is specified in ``@pytest.mark.ansible_playbook`` "
+            "decorator of this test case, please add at least one playbook "
+            "file name as a parameter into the marker, eg. "
+            "``@pytest.mark.ansible_playbook('playbook.yml')``")
+        raise Exception(msg)
+    for playbook_file in marker.args:
+        ansible_command = [
+            "ansible-playbook",
+            "-vv",
+            "-i", request.config.option.ansible_playbook_inventory,
+            playbook_file,
+            ]
+        subprocess.check_call(
+            ansible_command,
+            cwd=request.config.option.ansible_playbook_directory)
