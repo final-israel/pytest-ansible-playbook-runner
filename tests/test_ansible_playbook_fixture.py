@@ -242,24 +242,35 @@ def test_empty_mark(testdir):
 def test_ansible_error(testdir):
     """
     Make sure that test cases ends in ERROR state when ``ansible_playbook``
-    fixture fails.
+    fixture fails (because of ansible reported error).
     """
+    # create a minimal ansbile inventory file
+    inventory = testdir.makefile(".ini", "localhost")
+    # create a broken ansbile playbook file
+    playbook = testdir.makefile(
+        ".yml",
+        "---",
+        "- hosts: all",
+        "  connection: local",
+        "  tasks:",
+        "   - nothing",  # here is the problem inserted on purpose
+        )
     # create a temporary pytest test module
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook('such_file_does_not_exist.yml')
+        @pytest.mark.ansible_playbook('{0}')
         def test_foo(ansible_playbook):
             assert 1 == 1
 
-        @pytest.mark.ansible_playbook('such_file_does_not_exist.yml')
+        @pytest.mark.ansible_playbook('{0}')
         def test_bar(ansible_playbook):
             assert 1 == 0
-        """))
+        """.format(playbook.basename)))
     # run pytest with the following cmd args
     result = testdir.runpytest(
-        '--ansible-playbook-directory=such_file_does_not_exist',
-        '--ansible-playbook-inventory=such_file_does_not_exist',
+        '--ansible-playbook-directory={0}'.format(playbook.dirname),
+        '--ansible-playbook-inventory={0}'.format(inventory.basename),
         '-v',
         )
     # fnmatch_lines does an assertion internally
