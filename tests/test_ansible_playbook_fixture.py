@@ -5,17 +5,7 @@ import os
 import textwrap
 
 
-def test_help_message(testdir):
-    result = testdir.runpytest('--help')
-    # fnmatch_lines does an assertion internally
-    result.stdout.fnmatch_lines([
-        'ansible-playbook:',
-        '*--ansible-playbook-directory=PLAYBOOK_DIR*',
-        '*--ansible-playbook-inventory=INVENTORY_FILE*',
-        ])
-
-
-def test_ansible_playbook_fixture(testdir):
+def test_simple(testdir):
     """
     Make sure that``ansible_playbook`` fixture is recognized and pytest itself
     is not broken by running very simple playbook which has no side effects.
@@ -51,7 +41,7 @@ def test_ansible_playbook_fixture(testdir):
     assert result.ret == 0
 
 
-def test_ansible_playbook_fixture_checkfile(testdir):
+def test_checkfile(testdir):
     """
     Make sure that``ansible_playbook`` fixture is actually executes
     given playbook.
@@ -106,7 +96,7 @@ def test_ansible_playbook_fixture_checkfile(testdir):
     assert result.ret == 1
 
 
-def test_ansible_playbook_fixture_two_checkfile(testdir):
+def test_two_checkfile(testdir):
     """
     Make sure that ``ansible_playbook`` fixture actually executes
     both playbooks specified in the marker decorator.
@@ -174,7 +164,7 @@ def test_ansible_playbook_fixture_two_checkfile(testdir):
     assert result.ret == 0
 
 
-def test_ansible_playbook_fixture_missing_mark(testdir):
+def test_missing_mark(testdir):
     """
     Make sure that test cases ends in ERROR state when a test case is not
     marked with ``@pytest.mark.ansible_playbook('playbook.yml')``.
@@ -211,7 +201,7 @@ def test_ansible_playbook_fixture_missing_mark(testdir):
     assert result.ret == 1
 
 
-def test_ansible_playbook_fixture_empty_mark(testdir):
+def test_empty_mark(testdir):
     """
     Make sure that test cases ends in ERROR state when a test case is
     marked with empty marker decorator (``@pytest.mark.ansible_playbook()``).
@@ -249,7 +239,7 @@ def test_ansible_playbook_fixture_empty_mark(testdir):
     assert result.ret == 1
 
 
-def test_ansible_playbook_fixture_error(testdir):
+def test_ansible_error(testdir):
     """
     Make sure that test cases ends in ERROR state when ``ansible_playbook``
     fixture fails.
