@@ -2,6 +2,8 @@
 
 
 import os
+import random
+import string
 import textwrap
 
 import pytest
@@ -50,6 +52,52 @@ def broken_playbook(testdir):
     return playbook
 
 
+@pytest.fixture
+def testfile_playbook_generator(testdir):
+    """
+    Return an object with ``get()`` method to generate a playbook file which
+    creates a test file along with expected path and content.
+
+    This is usefull when one needs one or more playbooks with simple and easy
+    to check side effect.
+    """
+    class PlaybookGenerator(object):
+        _id = 1
+
+        def get(self):
+            # define file path for a test file which will be created
+            # by ansible-playbook run
+            test_file_path = os.path.join(
+                testdir.tmpdir.dirname,
+                "test_file.{0}".format(PlaybookGenerator._id))
+            # generate random content of the test file
+            test_file_content = "".join(
+                random.choice(string.ascii_letters) for _ in range(15))
+            # create ansbile playbook file(which would create file on
+            # test_file_path with test_file_content in it)
+            playbook = testdir.makefile(
+                ".{0}.yml".format(PlaybookGenerator._id),
+                "---",
+                "- hosts: all",
+                "  connection: local",
+                "  tasks:",
+                "   - name: Make sure test file does not exist",
+                "     file:",
+                "       path={0}".format(test_file_path),
+                "       state=absent",
+                "   - name: Create test file",
+                "     lineinfile:",
+                "       dest={0}".format(test_file_path),
+                "       create=yes",
+                "       line={0}".format(test_file_content),
+                "       state=present",
+                )
+            PlaybookGenerator._id += 1
+            return playbook, test_file_path, test_file_content
+
+    return PlaybookGenerator()
+
+
 def test_simple(testdir, inventory, minimal_playbook):
     """
     Make sure that``ansible_playbook`` fixture is recognized and pytest itself
@@ -75,28 +123,13 @@ def test_simple(testdir, inventory, minimal_playbook):
     assert result.ret == 0
 
 
-def test_checkfile(testdir, inventory):
+def test_checkfile(testdir, inventory, testfile_playbook_generator):
     """
-    Make sure that``ansible_playbook`` fixture is actually executes
+    Make sure that ``ansible_playbook`` fixture is actually executes
     given playbook.
     """
-    # define file path for a test file which will be created
-    # by ansible-playbook run
-    test_file_path = os.path.join(inventory.dirname, "test_file")
-    # create ansbile playbook file (which would create file on test_file_path)
-    playbook = testdir.makefile(
-        ".yml",
-        "---",
-        "- hosts: all",
-        "  connection: local",
-        "  tasks:",
-        "   - name: Create file in pytest testdir",
-        "     lineinfile:",
-        "       dest={0}".format(test_file_path),
-        "       create=yes",
-        "       line=testcontent",
-        "       state=present",
-        )
+    playbook, test_file_path, test_file_content = \
+        testfile_playbook_generator.get()
     # create a temporary pytest test module
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
@@ -123,73 +156,44 @@ def test_checkfile(testdir, inventory):
     # check that test_file has been created
     with open(test_file_path, 'r') as test_file_object:
         content = test_file_object.read()
-        assert content == "testcontent\n"
+        assert content == test_file_content + "\n"
     # make sure that that we get a '1' exit code for the testsuite
     assert result.ret == 1
 
 
-def test_two_checkfile(testdir, inventory):
+def test_two_checkfile(testdir, inventory, testfile_playbook_generator):
     """
     Make sure that ``ansible_playbook`` fixture actually executes
     both playbooks specified in the marker decorator.
     """
-    # define file path for a test file which will be created
-    # by ansible-playbook run
-    test_file_paths = [
-        os.path.join(inventory.dirname, "test_file_one"),
-        os.path.join(inventory.dirname, "test_file_two"),
-        ]
-    # create ansbile playbook file (which would create file on test_file_path)
-    playbook_one = testdir.makefile(
-        ".one.yml",
-        "---",
-        "- hosts: all",
-        "  connection: local",
-        "  tasks:",
-        "   - name: Create file in pytest testdir",
-        "     lineinfile:",
-        "       dest={0}".format(test_file_paths[0]),
-        "       create=yes",
-        "       line=testcontent",
-        "       state=present",
-        )
-    playbook_two = testdir.makefile(
-        ".two.yml",
-        "---",
-        "- hosts: all",
-        "  connection: local",
-        "  tasks:",
-        "   - name: Create file in pytest testdir",
-        "     lineinfile:",
-        "       dest={0}".format(test_file_paths[1]),
-        "       create=yes",
-        "       line=testcontent",
-        "       state=present",
-        )
+    playbook_1, filepath_1, content_1 = testfile_playbook_generator.get()
+    playbook_2, filepath_2, content_2 = testfile_playbook_generator.get()
     # create a temporary pytest test module
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
         @pytest.mark.ansible_playbook('{0}', '{1}')
-        def test_one(ansible_playbook):
+        def test_1(ansible_playbook):
             assert 1 == 1
-        """.format(playbook_one.basename, playbook_two.basename)))
+        """.format(playbook_1.basename, playbook_2.basename)))
     # check assumption of this test case, if this fails, we need to rewrite
     # this test case so that both playbook files ends in the same directory
-    assert playbook_one.dirname == playbook_two.dirname
+    assert playbook_1.dirname == playbook_2.dirname
     # run pytest with the following cmd args
     result = testdir.runpytest(
-        '--ansible-playbook-directory={0}'.format(playbook_one.dirname),
+        '--ansible-playbook-directory={0}'.format(playbook_1.dirname),
         '--ansible-playbook-inventory={0}'.format(inventory.basename),
         '-v',
         )
     # fnmatch_lines does an assertion internally
-    result.stdout.fnmatch_lines(['*::test_one PASSED'])
+    result.stdout.fnmatch_lines(['*::test_1 PASSED'])
     # check that test_file has been created
-    for file_path in test_file_paths:
+    for file_path, exp_content in zip(
+            (filepath_1, filepath_2),
+            (content_1, content_2)):
         with open(file_path, 'r') as test_file_object:
             content = test_file_object.read()
-            assert content == "testcontent\n"
+            assert content == exp_content + "\n"
     # make sure that that we get a '0' exit code for the testsuite
     assert result.ret == 0
 
