@@ -107,7 +107,7 @@ def test_simple(testdir, inventory, minimal_playbook):
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook('{0}')
+        @pytest.mark.ansible_playbook_setup('{0}')
         def test_foo(ansible_playbook):
             assert 1 == 1
         """.format(minimal_playbook.basename)))
@@ -134,11 +134,11 @@ def test_checkfile(testdir, inventory, testfile_playbook_generator):
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook('{0}')
+        @pytest.mark.ansible_playbook_setup('{0}')
         def test_foo(ansible_playbook):
             assert 1 == 1
 
-        @pytest.mark.ansible_playbook('{0}')
+        @pytest.mark.ansible_playbook_setup('{0}')
         def test_bar(ansible_playbook):
             assert 1 == 0
         """.format(playbook.basename)))
@@ -172,7 +172,7 @@ def test_two_checkfile(testdir, inventory, testfile_playbook_generator):
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook('{0}', '{1}')
+        @pytest.mark.ansible_playbook_setup('{0}', '{1}')
         def test_1(ansible_playbook):
             assert 1 == 1
         """.format(playbook_1.basename, playbook_2.basename)))
@@ -201,7 +201,7 @@ def test_two_checkfile(testdir, inventory, testfile_playbook_generator):
 def test_missing_mark(testdir, inventory, minimal_playbook):
     """
     Make sure that test cases ends in ERROR state when a test case is not
-    marked with ``@pytest.mark.ansible_playbook('playbook.yml')``.
+    marked with ``@pytest.mark.ansible_playbook_setup('playbook.yml')``.
     """
     # create a temporary pytest test module
     testdir.makepyfile(textwrap.dedent("""\
@@ -227,13 +227,14 @@ def test_missing_mark(testdir, inventory, minimal_playbook):
 def test_empty_mark(testdir, inventory, minimal_playbook):
     """
     Make sure that test cases ends in ERROR state when a test case is
-    marked with empty marker decorator (``@pytest.mark.ansible_playbook()``).
+    marked with empty marker decorator
+    (``@pytest.mark.ansible_playbook_setup()``).
     """
     # create a temporary pytest test module
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook()
+        @pytest.mark.ansible_playbook_setup()
         def test_foo(ansible_playbook):
             assert 1 == 1
         """))
@@ -260,11 +261,11 @@ def test_ansible_error(testdir, inventory, broken_playbook):
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook('{0}')
+        @pytest.mark.ansible_playbook_setup('{0}')
         def test_foo(ansible_playbook):
             assert 1 == 1
 
-        @pytest.mark.ansible_playbook('{0}')
+        @pytest.mark.ansible_playbook_setup('{0}')
         def test_bar(ansible_playbook):
             assert 1 == 0
         """.format(broken_playbook.basename)))

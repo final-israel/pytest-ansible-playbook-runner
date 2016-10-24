@@ -66,22 +66,23 @@ def ansible_playbook(request):
     nonzero return code, the test case which uses this fixture is not
     executed and ends in ``ERROR`` state.
     """
-    marker = request.node.get_marker('ansible_playbook')
-    if marker is None:
+    setup_marker = request.node.get_marker('ansible_playbook_setup')
+    if setup_marker is None:
         msg = (
             "ansible playbook not specified for the test case, "
             "please add a decorator like this one "
-            "``@pytest.mark.ansible_playbook('playbook.yml')`` "
+            "``@pytest.mark.ansible_playbook_setup('playbook.yml')`` "
             "for ansible_playbook fixture to know which playbook to use")
         raise Exception(msg)
-    if len(marker.args) == 0:
+    if len(setup_marker.args) == 0:
         msg = (
-            "no playbook is specified in ``@pytest.mark.ansible_playbook`` "
+            "no playbook is specified in "
+            "``@pytest.mark.ansible_playbook_setup`` "
             "decorator of this test case, please add at least one playbook "
             "file name as a parameter into the marker, eg. "
-            "``@pytest.mark.ansible_playbook('playbook.yml')``")
+            "``@pytest.mark.ansible_playbook_setup('playbook.yml')``")
         raise Exception(msg)
-    for playbook_file in marker.args:
+    for playbook_file in setup_marker.args:
         ansible_command = [
             "ansible-playbook",
             "-vv",
