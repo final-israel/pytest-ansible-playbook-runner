@@ -4,14 +4,24 @@
 import os
 import textwrap
 
+import pytest
 
-def test_simple(testdir):
+
+@pytest.fixture
+def inventory(testdir):
+    """
+    Create minimal ansible inventory file (such file contains just
+    single line ``localhost``).
+    """
+    inventory = testdir.makefile(".ini", "localhost")
+    return inventory
+
+
+def test_simple(testdir, inventory):
     """
     Make sure that``ansible_playbook`` fixture is recognized and pytest itself
     is not broken by running very simple playbook which has no side effects.
     """
-    # create a minimal ansbile inventory file (just a single line inside)
-    inventory = testdir.makefile(".ini", "localhost")
     # create a minimal ansbile playbook file (which does nothing)
     playbook = testdir.makefile(
         ".yml",
@@ -41,13 +51,11 @@ def test_simple(testdir):
     assert result.ret == 0
 
 
-def test_checkfile(testdir):
+def test_checkfile(testdir, inventory):
     """
     Make sure that``ansible_playbook`` fixture is actually executes
     given playbook.
     """
-    # create a minimal ansbile inventory file
-    inventory = testdir.makefile(".ini", "localhost")
     # define file path for a test file which will be created
     # by ansible-playbook run
     test_file_path = os.path.join(inventory.dirname, "test_file")
@@ -96,13 +104,11 @@ def test_checkfile(testdir):
     assert result.ret == 1
 
 
-def test_two_checkfile(testdir):
+def test_two_checkfile(testdir, inventory):
     """
     Make sure that ``ansible_playbook`` fixture actually executes
     both playbooks specified in the marker decorator.
     """
-    # create a minimal ansbile inventory file
-    inventory = testdir.makefile(".ini", "localhost")
     # define file path for a test file which will be created
     # by ansible-playbook run
     test_file_paths = [
@@ -164,13 +170,11 @@ def test_two_checkfile(testdir):
     assert result.ret == 0
 
 
-def test_missing_mark(testdir):
+def test_missing_mark(testdir, inventory):
     """
     Make sure that test cases ends in ERROR state when a test case is not
     marked with ``@pytest.mark.ansible_playbook('playbook.yml')``.
     """
-    # create a minimal ansbile inventory file
-    inventory = testdir.makefile(".ini", "localhost")
     # create a minimal ansbile playbook file (which does nothing)
     playbook = testdir.makefile(
         ".yml",
@@ -201,13 +205,11 @@ def test_missing_mark(testdir):
     assert result.ret == 1
 
 
-def test_empty_mark(testdir):
+def test_empty_mark(testdir, inventory):
     """
     Make sure that test cases ends in ERROR state when a test case is
     marked with empty marker decorator (``@pytest.mark.ansible_playbook()``).
     """
-    # create a minimal ansbile inventory file
-    inventory = testdir.makefile(".ini", "localhost")
     # create a minimal ansbile playbook file (which does nothing)
     playbook = testdir.makefile(
         ".yml",
@@ -239,13 +241,11 @@ def test_empty_mark(testdir):
     assert result.ret == 1
 
 
-def test_ansible_error(testdir):
+def test_ansible_error(testdir, inventory):
     """
     Make sure that test cases ends in ERROR state when ``ansible_playbook``
     fixture fails (because of ansible reported error).
     """
-    # create a minimal ansbile inventory file
-    inventory = testdir.makefile(".ini", "localhost")
     # create a broken ansbile playbook file
     playbook = testdir.makefile(
         ".yml",
