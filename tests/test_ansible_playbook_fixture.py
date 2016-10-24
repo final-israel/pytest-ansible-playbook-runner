@@ -98,7 +98,8 @@ def testfile_playbook_generator(testdir):
     return PlaybookGenerator()
 
 
-def test_simple(testdir, inventory, minimal_playbook):
+@pytest.mark.parametrize("marker_type", ["setup", "teardown"])
+def test_simple(testdir, inventory, minimal_playbook, marker_type):
     """
     Make sure that``ansible_playbook`` fixture is recognized and pytest itself
     is not broken by running very simple playbook which has no side effects.
@@ -107,10 +108,10 @@ def test_simple(testdir, inventory, minimal_playbook):
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook_setup('{0}')
+        @pytest.mark.ansible_playbook_{0}('{1}')
         def test_foo(ansible_playbook):
             assert 1 == 1
-        """.format(minimal_playbook.basename)))
+        """.format(marker_type, minimal_playbook.basename)))
     # run pytest with the following cmd args
     result = testdir.runpytest(
         '--ansible-playbook-directory={0}'.format(minimal_playbook.dirname),
@@ -123,7 +124,9 @@ def test_simple(testdir, inventory, minimal_playbook):
     assert result.ret == 0
 
 
-def test_checkfile(testdir, inventory, testfile_playbook_generator):
+@pytest.mark.parametrize("marker_type", ["setup", "teardown"])
+def test_checkfile(
+        testdir, inventory, testfile_playbook_generator, marker_type):
     """
     Make sure that ``ansible_playbook`` fixture is actually executes
     given playbook.
@@ -134,14 +137,14 @@ def test_checkfile(testdir, inventory, testfile_playbook_generator):
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook_setup('{0}')
+        @pytest.mark.ansible_playbook_{0}('{1}')
         def test_foo(ansible_playbook):
             assert 1 == 1
 
-        @pytest.mark.ansible_playbook_setup('{0}')
+        @pytest.mark.ansible_playbook_{0}('{1}')
         def test_bar(ansible_playbook):
             assert 1 == 0
-        """.format(playbook.basename)))
+        """.format(marker_type, playbook.basename)))
     # run pytest with the following cmd args
     result = testdir.runpytest(
         '--ansible-playbook-directory={0}'.format(playbook.dirname),
@@ -161,7 +164,9 @@ def test_checkfile(testdir, inventory, testfile_playbook_generator):
     assert result.ret == 1
 
 
-def test_two_checkfile(testdir, inventory, testfile_playbook_generator):
+@pytest.mark.parametrize("marker_type", ["setup", "teardown"])
+def test_two_checkfile(
+        testdir, inventory, testfile_playbook_generator, marker_type):
     """
     Make sure that ``ansible_playbook`` fixture actually executes
     both playbooks specified in the marker decorator.
@@ -172,10 +177,10 @@ def test_two_checkfile(testdir, inventory, testfile_playbook_generator):
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook_setup('{0}', '{1}')
+        @pytest.mark.ansible_playbook_{0}('{1}', '{2}')
         def test_1(ansible_playbook):
             assert 1 == 1
-        """.format(playbook_1.basename, playbook_2.basename)))
+        """.format(marker_type, playbook_1.basename, playbook_2.basename)))
     # check assumption of this test case, if this fails, we need to rewrite
     # this test case so that both playbook files ends in the same directory
     assert playbook_1.dirname == playbook_2.dirname
@@ -187,6 +192,71 @@ def test_two_checkfile(testdir, inventory, testfile_playbook_generator):
         )
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines(['*::test_1 PASSED'])
+    # check that test_file has been created
+    for file_path, exp_content in zip(
+            (filepath_1, filepath_2),
+            (content_1, content_2)):
+        with open(file_path, 'r') as test_file_object:
+            content = test_file_object.read()
+            assert content == exp_content + "\n"
+    # make sure that that we get a '0' exit code for the testsuite
+    assert result.ret == 0
+
+
+def test_teardown_checkfile(testdir, inventory, testfile_playbook_generator):
+    """
+    Make sure that ``ansible_playbook`` fixture actually executes
+    setup playbook during setup, and then teardown playbook during teardown.
+
+    This is done by making the check in the temporary pytest module
+    (see testdir.makepyfile call), which makes sure that:
+
+    * setup temporary file exists
+    * teardown temporary file doesn't exist
+    """
+    # setup playbook
+    playbook_1, filepath_1, content_1 = testfile_playbook_generator.get()
+    # teardown playbook
+    playbook_2, filepath_2, content_2 = testfile_playbook_generator.get()
+    # create a temporary pytest test module
+    testdir.makepyfile(textwrap.dedent("""\
+        import pytest
+
+        @pytest.mark.ansible_playbook_setup('{0}')
+        @pytest.mark.ansible_playbook_teardown('{1}')
+        def test_proper_teardown(ansible_playbook):
+            setup_file_path = '{2}'
+            setup_exp_content = '{3}'
+            teardown_file_path = '{4}'
+            teardown_exp_content = '{5}'
+            with open(setup_file_path, 'r') as test_file_object:
+                content = test_file_object.read()
+                assert content == setup_exp_content + "\\n"
+            # with pytest.raises(IOError):
+            #     open(teardown_file_path, 'r')
+            # HACK, create the temp files in proper directory instead
+            with open(teardown_file_path, 'r') as test_file_object:
+                content = test_file_object.read()
+                assert content != teardown_exp_content + "\\n"
+        """.format(
+            playbook_1.basename,
+            playbook_2.basename,
+            filepath_1,
+            content_1,
+            filepath_2,
+            content_2,
+            )))
+    # check assumption of this test case, if this fails, we need to rewrite
+    # this test case so that both playbook files ends in the same directory
+    assert playbook_1.dirname == playbook_2.dirname
+    # run pytest with the following cmd args
+    result = testdir.runpytest(
+        '--ansible-playbook-directory={0}'.format(playbook_1.dirname),
+        '--ansible-playbook-inventory={0}'.format(inventory.basename),
+        '-v',
+        )
+    # fnmatch_lines does an assertion internally
+    result.stdout.fnmatch_lines(['*::test_proper_teardown PASSED'])
     # check that test_file has been created
     for file_path, exp_content in zip(
             (filepath_1, filepath_2),
@@ -224,7 +294,8 @@ def test_missing_mark(testdir, inventory, minimal_playbook):
     assert result.ret == 1
 
 
-def test_empty_mark(testdir, inventory, minimal_playbook):
+@pytest.mark.parametrize("marker_type", ["setup", "teardown"])
+def test_empty_mark(testdir, inventory, minimal_playbook, marker_type):
     """
     Make sure that test cases ends in ERROR state when a test case is
     marked with empty marker decorator
@@ -234,10 +305,10 @@ def test_empty_mark(testdir, inventory, minimal_playbook):
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook_setup()
+        @pytest.mark.ansible_playbook_{0}()
         def test_foo(ansible_playbook):
             assert 1 == 1
-        """))
+        """.format(marker_type)))
     # run pytest with the following cmd args
     result = testdir.runpytest(
         '--ansible-playbook-directory={0}'.format(minimal_playbook.dirname),
@@ -252,7 +323,8 @@ def test_empty_mark(testdir, inventory, minimal_playbook):
     assert result.ret == 1
 
 
-def test_ansible_error(testdir, inventory, broken_playbook):
+@pytest.mark.parametrize("marker_type", ["setup", "teardown"])
+def test_ansible_error(testdir, inventory, broken_playbook, marker_type):
     """
     Make sure that test cases ends in ERROR state when ``ansible_playbook``
     fixture fails (because of ansible reported error).
@@ -261,14 +333,14 @@ def test_ansible_error(testdir, inventory, broken_playbook):
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook_setup('{0}')
+        @pytest.mark.ansible_playbook_{0}('{1}')
         def test_foo(ansible_playbook):
             assert 1 == 1
 
-        @pytest.mark.ansible_playbook_setup('{0}')
+        @pytest.mark.ansible_playbook_{0}('{1}')
         def test_bar(ansible_playbook):
             assert 1 == 0
-        """.format(broken_playbook.basename)))
+        """.format(marker_type, broken_playbook.basename)))
     # run pytest with the following cmd args
     result = testdir.runpytest(
         '--ansible-playbook-directory={0}'.format(broken_playbook.dirname),

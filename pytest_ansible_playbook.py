@@ -59,6 +59,32 @@ def pytest_configure(config):
         raise pytest.UsageError(msg)
 
 
+def get_ansible_cmd(inventory_file, playbook_file):
+    """
+    Return process args list for ansible-playbook run.
+    """
+    ansible_command = [
+        "ansible-playbook",
+        "-vv",
+        "-i", inventory_file,
+        playbook_file,
+        ]
+    return ansible_command
+
+
+def get_empty_marker_error(marker_type):
+    """
+    Generate error message for empty marker.
+    """
+    msg = (
+        "no playbook is specified in "
+        "``@pytest.mark.ansible_playbook_{0}`` decorator "
+        "of this test case, please add at least one playbook "
+        "file name as a parameter into the marker, eg. "
+        "``@pytest.mark.ansible_playbook_{0}('playbook.yml')``")
+    return msg.format(marker_type)
+
+
 @pytest.fixture
 def ansible_playbook(request):
     """
@@ -67,28 +93,40 @@ def ansible_playbook(request):
     executed and ends in ``ERROR`` state.
     """
     setup_marker = request.node.get_marker('ansible_playbook_setup')
-    if setup_marker is None:
+    setup_playbooks = []
+    teardown_marker = request.node.get_marker('ansible_playbook_teardown')
+    teardown_playbooks = []
+
+    if setup_marker is None and teardown_marker is None:
         msg = (
-            "ansible playbook not specified for the test case, "
+            "no ansible playbook is specified for the test case, "
             "please add a decorator like this one "
             "``@pytest.mark.ansible_playbook_setup('playbook.yml')`` "
+            "or "
+            "``@pytest.mark.ansible_playbook_teardown('playbook.yml')`` "
             "for ansible_playbook fixture to know which playbook to use")
         raise Exception(msg)
-    if len(setup_marker.args) == 0:
-        msg = (
-            "no playbook is specified in "
-            "``@pytest.mark.ansible_playbook_setup`` "
-            "decorator of this test case, please add at least one playbook "
-            "file name as a parameter into the marker, eg. "
-            "``@pytest.mark.ansible_playbook_setup('playbook.yml')``")
-        raise Exception(msg)
-    for playbook_file in setup_marker.args:
-        ansible_command = [
-            "ansible-playbook",
-            "-vv",
-            "-i", request.config.option.ansible_playbook_inventory,
-            playbook_file,
-            ]
+    if setup_marker is not None:
+        setup_playbooks = setup_marker.args
+        if len(setup_marker.args) == 0:
+            raise Exception(get_empty_marker_error("setup"))
+    if teardown_marker is not None:
+        teardown_playbooks = teardown_marker.args
+        if len(teardown_marker.args) == 0:
+            raise Exception(get_empty_marker_error("teardown"))
+
+    # setup
+    for playbook_file in setup_playbooks:
         subprocess.check_call(
-            ansible_command,
+            get_ansible_cmd(
+                request.config.option.ansible_playbook_inventory,
+                playbook_file),
+            cwd=request.config.option.ansible_playbook_directory)
+    yield
+    # teardown
+    for playbook_file in teardown_playbooks:
+        subprocess.check_call(
+            get_ansible_cmd(
+                request.config.option.ansible_playbook_inventory,
+                playbook_file),
             cwd=request.config.option.ansible_playbook_directory)
