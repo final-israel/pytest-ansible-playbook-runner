@@ -17,12 +17,11 @@ def inventory(testdir):
     return inventory
 
 
-def test_simple(testdir, inventory):
+@pytest.fixture
+def minimal_playbook(testdir):
     """
-    Make sure that``ansible_playbook`` fixture is recognized and pytest itself
-    is not broken by running very simple playbook which has no side effects.
+    Create minimal ansible playbook file without any side effects.
     """
-    # create a minimal ansbile playbook file (which does nothing)
     playbook = testdir.makefile(
         ".yml",
         "---",
@@ -31,6 +30,31 @@ def test_simple(testdir, inventory):
         "  tasks:",
         "   - action: ping",
         )
+    return playbook
+
+
+@pytest.fixture
+def broken_playbook(testdir):
+    """
+    Create minimal ansible playbook file with an error in it, so that the
+    ``ansible-playbook`` would immediatelly fail when trying to execute it.
+    """
+    playbook = testdir.makefile(
+        ".yml",
+        "---",
+        "- hosts: all",
+        "  connection: local",
+        "  tasks:",
+        "   - nothing",  # here is the problem inserted on purpose
+        )
+    return playbook
+
+
+def test_simple(testdir, inventory, minimal_playbook):
+    """
+    Make sure that``ansible_playbook`` fixture is recognized and pytest itself
+    is not broken by running very simple playbook which has no side effects.
+    """
     # create a temporary pytest test module
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
@@ -38,10 +62,10 @@ def test_simple(testdir, inventory):
         @pytest.mark.ansible_playbook('{0}')
         def test_foo(ansible_playbook):
             assert 1 == 1
-        """.format(playbook.basename)))
+        """.format(minimal_playbook.basename)))
     # run pytest with the following cmd args
     result = testdir.runpytest(
-        '--ansible-playbook-directory={0}'.format(playbook.dirname),
+        '--ansible-playbook-directory={0}'.format(minimal_playbook.dirname),
         '--ansible-playbook-inventory={0}'.format(inventory.basename),
         '-v',
         )
@@ -170,20 +194,11 @@ def test_two_checkfile(testdir, inventory):
     assert result.ret == 0
 
 
-def test_missing_mark(testdir, inventory):
+def test_missing_mark(testdir, inventory, minimal_playbook):
     """
     Make sure that test cases ends in ERROR state when a test case is not
     marked with ``@pytest.mark.ansible_playbook('playbook.yml')``.
     """
-    # create a minimal ansbile playbook file (which does nothing)
-    playbook = testdir.makefile(
-        ".yml",
-        "---",
-        "- hosts: all",
-        "  connection: local",
-        "  tasks:",
-        "   - action: ping",
-        )
     # create a temporary pytest test module
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
@@ -193,7 +208,7 @@ def test_missing_mark(testdir, inventory):
         """))
     # run pytest with the following cmd args
     result = testdir.runpytest(
-        '--ansible-playbook-directory={0}'.format(playbook.dirname),
+        '--ansible-playbook-directory={0}'.format(minimal_playbook.dirname),
         '--ansible-playbook-inventory={0}'.format(inventory.basename),
         '-v',
         )
@@ -205,20 +220,11 @@ def test_missing_mark(testdir, inventory):
     assert result.ret == 1
 
 
-def test_empty_mark(testdir, inventory):
+def test_empty_mark(testdir, inventory, minimal_playbook):
     """
     Make sure that test cases ends in ERROR state when a test case is
     marked with empty marker decorator (``@pytest.mark.ansible_playbook()``).
     """
-    # create a minimal ansbile playbook file (which does nothing)
-    playbook = testdir.makefile(
-        ".yml",
-        "---",
-        "- hosts: all",
-        "  connection: local",
-        "  tasks:",
-        "   - action: ping",
-        )
     # create a temporary pytest test module
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
@@ -229,7 +235,7 @@ def test_empty_mark(testdir, inventory):
         """))
     # run pytest with the following cmd args
     result = testdir.runpytest(
-        '--ansible-playbook-directory={0}'.format(playbook.dirname),
+        '--ansible-playbook-directory={0}'.format(minimal_playbook.dirname),
         '--ansible-playbook-inventory={0}'.format(inventory.basename),
         '-v',
         )
@@ -241,20 +247,11 @@ def test_empty_mark(testdir, inventory):
     assert result.ret == 1
 
 
-def test_ansible_error(testdir, inventory):
+def test_ansible_error(testdir, inventory, broken_playbook):
     """
     Make sure that test cases ends in ERROR state when ``ansible_playbook``
     fixture fails (because of ansible reported error).
     """
-    # create a broken ansbile playbook file
-    playbook = testdir.makefile(
-        ".yml",
-        "---",
-        "- hosts: all",
-        "  connection: local",
-        "  tasks:",
-        "   - nothing",  # here is the problem inserted on purpose
-        )
     # create a temporary pytest test module
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
@@ -266,10 +263,10 @@ def test_ansible_error(testdir, inventory):
         @pytest.mark.ansible_playbook('{0}')
         def test_bar(ansible_playbook):
             assert 1 == 0
-        """.format(playbook.basename)))
+        """.format(broken_playbook.basename)))
     # run pytest with the following cmd args
     result = testdir.runpytest(
-        '--ansible-playbook-directory={0}'.format(playbook.dirname),
+        '--ansible-playbook-directory={0}'.format(broken_playbook.dirname),
         '--ansible-playbook-inventory={0}'.format(inventory.basename),
         '-v',
         )
