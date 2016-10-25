@@ -65,10 +65,13 @@ def testfile_playbook_generator(testdir):
         _id = 1
 
         def get(self):
+            # create dummy temp file,
+            # so that we can check it's ``.dirname`` attribute later
+            dummy_file = testdir.makefile(".dummy", "")
             # define file path for a test file which will be created
             # by ansible-playbook run
             test_file_path = os.path.join(
-                testdir.tmpdir.dirname,
+                dummy_file.dirname,
                 "test_file.{0}".format(PlaybookGenerator._id))
             # generate random content of the test file
             test_file_content = "".join(
@@ -81,10 +84,6 @@ def testfile_playbook_generator(testdir):
                 "- hosts: all",
                 "  connection: local",
                 "  tasks:",
-                "   - name: Make sure test file does not exist",
-                "     file:",
-                "       path={0}".format(test_file_path),
-                "       state=absent",
                 "   - name: Create test file",
                 "     lineinfile:",
                 "       dest={0}".format(test_file_path),
@@ -222,29 +221,20 @@ def test_teardown_checkfile(testdir, inventory, testfile_playbook_generator):
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook_setup('{0}')
-        @pytest.mark.ansible_playbook_teardown('{1}')
+        @pytest.mark.ansible_playbook_setup('{setup_playbook}')
+        @pytest.mark.ansible_playbook_teardown('{teardown_playbook}')
         def test_proper_teardown(ansible_playbook):
-            setup_file_path = '{2}'
-            setup_exp_content = '{3}'
-            teardown_file_path = '{4}'
-            teardown_exp_content = '{5}'
-            with open(setup_file_path, 'r') as test_file_object:
+            with open('{setup_file_path}', 'r') as test_file_object:
                 content = test_file_object.read()
-                assert content == setup_exp_content + "\\n"
-            # with pytest.raises(IOError):
-            #     open(teardown_file_path, 'r')
-            # HACK, create the temp files in proper directory instead
-            with open(teardown_file_path, 'r') as test_file_object:
-                content = test_file_object.read()
-                assert content != teardown_exp_content + "\\n"
+                assert content == '{setup_exp_content}' + "\\n"
+            with pytest.raises(IOError):
+                open('{teardown_file_path}', 'r')
         """.format(
-            playbook_1.basename,
-            playbook_2.basename,
-            filepath_1,
-            content_1,
-            filepath_2,
-            content_2,
+            setup_playbook=playbook_1.basename,
+            teardown_playbook=playbook_2.basename,
+            setup_file_path=filepath_1,
+            setup_exp_content=content_1,
+            teardown_file_path=filepath_2,
             )))
     # check assumption of this test case, if this fails, we need to rewrite
     # this test case so that both playbook files ends in the same directory
