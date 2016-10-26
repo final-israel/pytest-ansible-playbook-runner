@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name='pytest-ansible-playbook',
-    version='0.1.0',
+    version='0.2.0',
     author='Martin Bukatovič',
     author_email='mbukatov@redhat.com',
     maintainer='Martin Bukatovič',
