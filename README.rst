@@ -147,7 +147,7 @@ the coverage at least stays the same before you submit a pull request.
 License
 -------
 
-Distributed under the terms of the `GNU GPL v3.0`_ license,
+Distributed under the terms of the `Apache License 2.0`_ license,
 "pytest-ansible-playbook" is free and open source software
 
 
@@ -160,7 +160,6 @@ description.
 .. _`file an issue`: https://gitlab.com/mbukatov/pytest-ansible-playbook/issues
 .. _`Cookiecutter`: https://github.com/audreyr/cookiecutter
 .. _`@hackebrot`: https://github.com/hackebrot
-.. _`GNU GPL v3.0`: http://www.gnu.org/licenses/gpl-3.0.txt
 .. _`cookiecutter-pytest-plugin`: https://github.com/pytest-dev/cookiecutter-pytest-plugin
 .. _`pytest`: http://docs.pytest.org/en/latest/
 .. _`pytest fixture`: http://doc.pytest.org/en/latest/fixture.html
@@ -175,3 +174,4 @@ description.
 .. _`ansible playbooks`: https://docs.ansible.com/ansible/playbooks.html
 .. _`ansible facts`: https://docs.ansible.com/ansible/playbooks_variables.html#information-discovered-from-systems-facts
 .. _`ansible inventory`: https://docs.ansible.com/ansible/intro_inventory.html
+.. _`Apache License 2.0`: http://www.apache.org/licenses/LICENSE-2.0
