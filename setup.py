@@ -18,7 +18,7 @@ setup(
     author_email='mbukatov@redhat.com',
     maintainer='Martin Bukatovič',
     maintainer_email='mbukatov@redhat.com',
-    license='GNU GPL v3.0',
+    license='Apache 2.0',
     url='https://gitlab.com/mbukatov/pytest-ansible-playbook',
     description='Pytest fixture which runs given ansible playbook file.',
     long_description=read('README.rst'),
@@ -37,7 +37,6 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Operating System :: POSIX',
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
     ],
     entry_points={
         'pytest11': [
