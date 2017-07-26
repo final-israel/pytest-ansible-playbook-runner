@@ -48,7 +48,7 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     """
-    Validate pylatest-ansible-playbook options: when such option is used,
+    Validate pytest-ansible-playbook options: when such option is used,
     the given file or directory should exist.
 
     This check makes the pytest fail immediatelly when wrong path is
