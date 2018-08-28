@@ -27,7 +27,7 @@ def test_simple(testdir, inventory, minimal_playbook, marker_type):
         '-v',
         )
     # fnmatch_lines does an assertion internally
-    result.stdout.fnmatch_lines(['*::test_foo PASSED'])
+    result.stdout.fnmatch_lines(['*::test_foo PASSED*'])
     # make sure that that we get a '0' exit code for the testsuite
     assert result.ret == 0
 
@@ -61,8 +61,8 @@ def test_checkfile(
         )
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
-        '*::test_foo PASSED',
-        '*::test_bar FAILED',
+        '*::test_foo PASSED*',
+        '*::test_bar FAILED*',
         ])
     # check that test_file has been created
     with open(test_file_path, 'r') as test_file_object:
@@ -99,7 +99,7 @@ def test_two_checkfile(
         '-v',
         )
     # fnmatch_lines does an assertion internally
-    result.stdout.fnmatch_lines(['*::test_1 PASSED'])
+    result.stdout.fnmatch_lines(['*::test_1 PASSED*'])
     # check that test_file has been created
     for file_path, exp_content in zip(
             (filepath_1, filepath_2),
@@ -155,7 +155,7 @@ def test_teardown_checkfile(testdir, inventory, testfile_playbook_generator):
         '-v',
         )
     # fnmatch_lines does an assertion internally
-    result.stdout.fnmatch_lines(['*::test_proper_teardown PASSED'])
+    result.stdout.fnmatch_lines(['*::test_proper_teardown PASSED*'])
     # check that test_file has been created
     for file_path, exp_content in zip(
             (filepath_1, filepath_2),
@@ -187,7 +187,7 @@ def test_missing_mark(testdir, inventory, minimal_playbook):
         )
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
-        '*::test_foo ERROR',
+        '*::test_foo ERROR*',
         ])
     # make sure that that we get a '1' exit code for the testsuite
     assert result.ret == 1
@@ -216,7 +216,7 @@ def test_empty_mark(testdir, inventory, minimal_playbook, marker_type):
         )
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
-        '*::test_foo ERROR',
+        '*::test_foo ERROR*',
         ])
     # make sure that that we get a '1' exit code for the testsuite
     assert result.ret == 1
@@ -248,8 +248,8 @@ def test_ansible_error(testdir, inventory, broken_playbook, marker_type):
         )
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
-        '*::test_foo ERROR',
-        '*::test_bar ERROR',
+        '*::test_foo ERROR*',
+        '*::test_bar ERROR*',
         ])
     # make sure that that we get a '1' exit code for the testsuite
     assert result.ret == 1
