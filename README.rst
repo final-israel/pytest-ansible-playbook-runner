@@ -47,11 +47,20 @@ system.
 Installation
 ------------
 
-There is no stable release yet, so the only option is to use latest
-sources from master branch.
+You can either install `stable release from PyPI`_ or use latest development
+version from master branch.
 
-Latest development version
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Installing stable release
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can install "pytest-ansible-playbook" via `pip`_ from `PyPI`_::
+
+    $ pip install pytest-ansible-playbook
+
+
+Installing latest development version
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The suggested way to install from sources of current master branch is
 via `python virtual enviroment`_::
@@ -62,14 +71,6 @@ via `python virtual enviroment`_::
     $ pip install -e .
 
 Note that you can use `virtualenvwrapper`_ to simplify this workflow.
-
-.. TODO: uncomment the following when the 1st release is done
-.. Stable
-.. ~~~~~~
-
-.. You can install "pytest-ansible-playbook" via `pip`_ from `PyPI`_::
-
-..     $ pip install pytest-ansible-playbook
 
 
 Usage
@@ -168,6 +169,7 @@ description.
 .. _`tox`: https://tox.readthedocs.io/en/latest/
 .. _`pip`: https://pypi.python.org/pypi/pip/
 .. _`PyPI`: https://pypi.python.org/pypi
+.. _`stable release from PyPI`: https://pypi.org/project/pytest-ansible-playbook/
 .. _`python virtual enviroment`: https://virtualenv.pypa.io/en/stable/
 .. _`virtualenvwrapper`: https://virtualenvwrapper.readthedocs.io/en/latest/
 .. _`pytest-ansible`: https://pypi.python.org/pypi/pytest-ansible
