@@ -73,8 +73,25 @@ def test_checkfile(
 
 
 @pytest.mark.parametrize("marker_type", ["setup", "teardown"])
+@pytest.mark.parametrize("pytest_case", [
+    pytest.param(textwrap.dedent("""\
+        import pytest
+
+        @pytest.mark.ansible_playbook_{0}('{1}')
+        @pytest.mark.ansible_playbook_{0}('{2}')
+        def test_1(ansible_playbook):
+            assert 1 == 1
+        """), id="twomarkers"),
+    pytest.param(textwrap.dedent("""\
+        import pytest
+
+        @pytest.mark.ansible_playbook_{0}('{1}', '{2}')
+        def test_1(ansible_playbook):
+            assert 1 == 1
+        """), id="onemarker"),
+    ])
 def test_two_checkfile(
-        testdir, inventory, testfile_playbook_generator, marker_type):
+        testdir, inventory, testfile_playbook_generator, marker_type, pytest_case):
     """
     Make sure that ``ansible_playbook`` fixture actually executes
     both playbooks specified in the marker decorator.
@@ -82,13 +99,7 @@ def test_two_checkfile(
     playbook_1, filepath_1, content_1 = testfile_playbook_generator.get()
     playbook_2, filepath_2, content_2 = testfile_playbook_generator.get()
     # create a temporary pytest test module
-    testdir.makepyfile(textwrap.dedent("""\
-        import pytest
-
-        @pytest.mark.ansible_playbook_{0}('{1}', '{2}')
-        def test_1(ansible_playbook):
-            assert 1 == 1
-        """.format(marker_type, playbook_1.basename, playbook_2.basename)))
+    testdir.makepyfile(pytest_case.format(marker_type, playbook_1.basename, playbook_2.basename))
     # check assumption of this test case, if this fails, we need to rewrite
     # this test case so that both playbook files ends in the same directory
     assert playbook_1.dirname == playbook_2.dirname
