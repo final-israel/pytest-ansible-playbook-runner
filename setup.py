@@ -23,7 +23,7 @@ setup(
     description='Pytest fixture which runs given ansible playbook file.',
     long_description=read('README.rst'),
     py_modules=['pytest_ansible_playbook'],
-    install_requires=['pytest>=2.9.2'],
+    install_requires=['pytest>=2.9.2,<=3.10.1'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Framework :: Pytest',
