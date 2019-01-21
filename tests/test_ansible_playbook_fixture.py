@@ -91,7 +91,11 @@ def test_checkfile(
         """), id="onemarker"),
     ])
 def test_two_checkfile(
-        testdir, inventory, testfile_playbook_generator, marker_type, pytest_case):
+        testdir,
+        inventory,
+        testfile_playbook_generator,
+        marker_type,
+        pytest_case):
     """
     Make sure that ``ansible_playbook`` fixture actually executes
     both playbooks specified in the marker decorator.
@@ -99,7 +103,8 @@ def test_two_checkfile(
     playbook_1, filepath_1, content_1 = testfile_playbook_generator.get()
     playbook_2, filepath_2, content_2 = testfile_playbook_generator.get()
     # create a temporary pytest test module
-    testdir.makepyfile(pytest_case.format(marker_type, playbook_1.basename, playbook_2.basename))
+    testdir.makepyfile(pytest_case.format(
+        marker_type, playbook_1.basename, playbook_2.basename))
     # check assumption of this test case, if this fails, we need to rewrite
     # this test case so that both playbook files ends in the same directory
     assert playbook_1.dirname == playbook_2.dirname
