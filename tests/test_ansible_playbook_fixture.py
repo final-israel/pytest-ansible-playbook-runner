@@ -33,6 +33,49 @@ def test_simple(testdir, inventory, minimal_playbook, marker_type):
 
 
 @pytest.mark.parametrize("marker_type", ["setup", "teardown"])
+def test_simple_usedbyfixture(
+        testdir,
+        inventory,
+        minimal_playbook,
+        marker_type):
+    """
+    Check what happens when ``ansible_playbook`` fixture is used with a fixtrue
+    by running very simple playbook which has no side effects.
+
+    This is expected to end with ERROR as mark has no effect in fixture
+    functions, see also:
+
+     * https://gitlab.com/mbukatov/pytest-ansible-playbook/issues/4
+     * https://github.com/pytest-dev/pytest/issues/3664
+
+    I keep it here as a reference and to be able to notice any changes related
+    to this use case in pytest.
+    """
+    # create a temporary pytest test module
+    testdir.makepyfile(textwrap.dedent("""\
+        import pytest
+
+        @pytest.mark.ansible_playbook_{0}('{1}')
+        @pytest.fixture
+        def fixture_foo(ansible_playbook):
+            return 1
+
+        def test_foo(fixture_foo):
+            assert 1 == fixture_foo
+        """.format(marker_type, minimal_playbook.basename)))
+    # run pytest with the following cmd args
+    result = testdir.runpytest(
+        '--ansible-playbook-directory={0}'.format(minimal_playbook.dirname),
+        '--ansible-playbook-inventory={0}'.format(inventory.basename),
+        '-v',
+        )
+    # fnmatch_lines does an assertion internally
+    result.stdout.fnmatch_lines(['*::test_foo ERROR*'])
+    # make sure that that we get a '1' exit code for the testsuite
+    assert result.ret == 1
+
+
+@pytest.mark.parametrize("marker_type", ["setup", "teardown"])
 def test_checkfile(
         testdir, inventory, testfile_playbook_generator, marker_type):
     """
