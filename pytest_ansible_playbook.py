@@ -100,6 +100,30 @@ def get_empty_marker_error(marker_type):
     return msg.format(marker_type)
 
 
+@contextlib.contextmanager
+def runner(request, setup_playbooks=None, teardown_playbooks=None):
+    """
+    Context manager which will run playbooks specified in it's arugments.
+    It can be used to build fixtures with any scope.
+    """
+    setup_playbooks = setup_playbooks or []
+    teardown_playbooks = teardown_playbooks or []
+    # process request object
+    directory = request.config.option.ansible_playbook_directory
+    inventory = request.config.option.ansible_playbook_inventory
+    # setup
+    for playbook_file in setup_playbooks:
+        subprocess.check_call(
+            get_ansible_cmd(inventory, playbook_file),
+            cwd=directory)
+    yield
+    # teardown
+    for playbook_file in teardown_playbooks:
+        subprocess.check_call(
+            get_ansible_cmd(inventory, playbook_file),
+            cwd=directory)
+
+
 @pytest.fixture
 def ansible_playbook_context(request):
     """
@@ -107,33 +131,17 @@ def ansible_playbook_context(request):
     arugments.
 
     This fixture doesn't run playbooks in setup or teardown phase of a test
-    case. It's expected to be used to build other fixture functions or to be
-    used directly in a test case code.
-    """
-    @contextlib.contextmanager
-    def runner(setup_playbooks=None, teardown_playbooks=None):
-        setup_playbooks = setup_playbooks or []
-        teardown_playbooks = teardown_playbooks or []
-        cwd = request.config.option.ansible_playbook_directory
-        # setup
-        for playbook_file in setup_playbooks:
-            subprocess.check_call(
-                get_ansible_cmd(
-                    request.config.option.ansible_playbook_inventory,
-                    playbook_file,
-                ),
-                cwd=cwd)
-        yield
-        # teardown
-        for playbook_file in teardown_playbooks:
-            subprocess.check_call(
-                get_ansible_cmd(
-                    request.config.option.ansible_playbook_inventory,
-                    playbook_file,
-                ),
-                cwd=cwd)
+    case. It's expected to be used to build other fixture functions (unless you
+    need to define scope of the fixture) or to be used directly in a test case
+    code.
 
-    return runner
+    See also section about "factory as fixture" pattern in pytest docs:
+    https://docs.pytest.org/en/latest/fixture.html#factories-as-fixtures
+    """
+    def _runner(setup_playbooks=None, teardown_playbooks=None):
+        return runner(request, setup_playbooks, teardown_playbooks)
+
+    return _runner
 
 
 @pytest.fixture

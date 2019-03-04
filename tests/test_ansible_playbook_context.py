@@ -110,3 +110,45 @@ def test_custom_fixture_checkfile(
         assert content == test_file_content + "\n"
     # make sure that that we get a '1' exit code for the testsuite
     assert result.ret == 1
+
+
+@pytest.mark.parametrize("scope", ["function", "module", "class", "session"])
+@pytest.mark.parametrize("marker_type", ["setup", "teardown"])
+def test_custom_fixture_scope_checkfile(
+        testdir, inventory, testfile_playbook_generator, marker_type, scope):
+    """
+    Build custom fixture of given scope using ``ansible_playbook_context``
+    context manager and check that it executes given playbooks as expected.
+    """
+    playbook, test_file_path, test_file_content = \
+        testfile_playbook_generator.get()
+    # create a temporary pytest test module
+    testdir.makepyfile(textwrap.dedent("""\
+        import pytest
+
+        from pytest_ansible_playbook import runner
+
+        @pytest.fixture(scope="{2}")
+        def some_fixture(request):
+            with runner(request, {0}_playbooks=['{1}']):
+                yield
+
+        def test_bar(some_fixture):
+            assert 1 == 0
+        """.format(marker_type, playbook.basename, scope)))
+    # run pytest with the following cmd args
+    result = testdir.runpytest(
+        '--ansible-playbook-directory={0}'.format(playbook.dirname),
+        '--ansible-playbook-inventory={0}'.format(inventory.basename),
+        '-v',
+        )
+    # fnmatch_lines does an assertion internally
+    result.stdout.fnmatch_lines([
+        '*::test_bar FAILED*',
+        ])
+    # check that test_file has been created
+    with open(test_file_path, 'r') as test_file_object:
+        content = test_file_object.read()
+        assert content == test_file_content + "\n"
+    # make sure that that we get a '1' exit code for the testsuite
+    assert result.ret == 1
