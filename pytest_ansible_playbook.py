@@ -21,7 +21,6 @@ Implementation of pytest-ansible-playbook plugin.
 from __future__ import print_function
 import os
 import subprocess
-import shlex
 import contextlib
 
 import pytest
@@ -45,14 +44,6 @@ def pytest_addoption(parser):
         dest='ansible_playbook_inventory',
         metavar="INVENTORY_FILE",
         help='Ansible inventory file.',
-        )
-    group.addoption(
-        '--ansible-playbook-args',
-        action='store',
-        dest='ansible_playbook_args',
-        metavar="EXTRA_ARGS",
-        help='String specifying extra arguments to pass to the '
-             '`ansible-playbook` command',
         )
 
 
@@ -83,7 +74,7 @@ def pytest_configure(config):
         raise pytest.UsageError(msg)
 
 
-def get_ansible_cmd(inventory_file, playbook_file, extra_args=None):
+def get_ansible_cmd(inventory_file, playbook_file):
     """
     Return process args list for ansible-playbook run.
     """
@@ -93,8 +84,6 @@ def get_ansible_cmd(inventory_file, playbook_file, extra_args=None):
         "-i", inventory_file,
         playbook_file,
         ]
-    if extra_args:
-        ansible_command.extend(extra_args)
     return ansible_command
 
 
@@ -140,7 +129,7 @@ def run_playbooks(request):
             raise Exception(get_empty_marker_error("teardown"))
 
     @contextlib.contextmanager
-    def runner(args):
+    def runner():
         cwd = request.config.option.ansible_playbook_directory
         # setup
         for playbook_file in setup_playbooks:
@@ -148,7 +137,6 @@ def run_playbooks(request):
                 get_ansible_cmd(
                     request.config.option.ansible_playbook_inventory,
                     playbook_file,
-                    extra_args=args,
                 ),
                 cwd=cwd)
         yield
@@ -158,7 +146,6 @@ def run_playbooks(request):
                 get_ansible_cmd(
                     request.config.option.ansible_playbook_inventory,
                     playbook_file,
-                    extra_args=args,
                 ),
                 cwd=cwd)
 
@@ -172,6 +159,5 @@ def ansible_playbook(request, run_playbooks):
     nonzero return code, the test case which uses this fixture is not
     executed and ends in ``ERROR`` state.
     """
-    args = shlex.split(request.config.option.ansible_playbook_args)
-    with playbook_runner(args):
+    with run_playbooks():
         yield
