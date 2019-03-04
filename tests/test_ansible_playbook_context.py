@@ -66,7 +66,7 @@ def test_checkfile(
             content = test_file_object.read()
             assert content == test_file_content + "\n"
     else:
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises(IOError):
             open(test_file_path, 'r')
     # make sure that that we get a '1' exit code for the testsuite
     assert result.ret == 1
