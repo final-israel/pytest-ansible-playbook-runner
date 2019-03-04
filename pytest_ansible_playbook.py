@@ -101,9 +101,47 @@ def get_empty_marker_error(marker_type):
 
 
 @pytest.fixture
-def run_playbooks(request):
-    """Deliver a context manager which will run the named playbooks specified
-    via ``ansible_playbook_[setup|teardown]`` marks.
+def ansible_playbook_context(request):
+    """
+    Deliver a context manager which will run playbooks specified in it's
+    arugments.
+
+    This fixture doesn't run playbooks in setup or teardown phase of a test
+    case. It's expected to be used to build other fixture functions or to be
+    used directly in a test case code.
+    """
+    @contextlib.contextmanager
+    def runner(setup_playbooks=None, teardown_playbooks=None):
+        setup_playbooks = setup_playbooks or []
+        teardown_playbooks = teardown_playbooks or []
+        cwd = request.config.option.ansible_playbook_directory
+        # setup
+        for playbook_file in setup_playbooks:
+            subprocess.check_call(
+                get_ansible_cmd(
+                    request.config.option.ansible_playbook_inventory,
+                    playbook_file,
+                ),
+                cwd=cwd)
+        yield
+        # teardown
+        for playbook_file in teardown_playbooks:
+            subprocess.check_call(
+                get_ansible_cmd(
+                    request.config.option.ansible_playbook_inventory,
+                    playbook_file,
+                ),
+                cwd=cwd)
+
+    return runner
+
+
+@pytest.fixture
+def ansible_playbook(request, ansible_playbook_context):
+    """
+    Pytest fixture which runs given ansible playbook. When ansible returns
+    nonzero return code, the test case which uses this fixture is not
+    executed and ends in ``ERROR`` state.
     """
     setup_marker = request.node.get_marker('ansible_playbook_setup')
     setup_playbooks = []
@@ -128,36 +166,5 @@ def run_playbooks(request):
         if len(teardown_marker.args) == 0:
             raise Exception(get_empty_marker_error("teardown"))
 
-    @contextlib.contextmanager
-    def runner():
-        cwd = request.config.option.ansible_playbook_directory
-        # setup
-        for playbook_file in setup_playbooks:
-            subprocess.check_call(
-                get_ansible_cmd(
-                    request.config.option.ansible_playbook_inventory,
-                    playbook_file,
-                ),
-                cwd=cwd)
-        yield
-        # teardown
-        for playbook_file in teardown_playbooks:
-            subprocess.check_call(
-                get_ansible_cmd(
-                    request.config.option.ansible_playbook_inventory,
-                    playbook_file,
-                ),
-                cwd=cwd)
-
-    return runner
-
-
-@pytest.fixture
-def ansible_playbook(request, run_playbooks):
-    """
-    Pytest fixture which runs given ansible playbook. When ansible returns
-    nonzero return code, the test case which uses this fixture is not
-    executed and ends in ``ERROR`` state.
-    """
-    with run_playbooks():
+    with ansible_playbook_context(setup_playbooks, teardown_playbooks):
         yield
