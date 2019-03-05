@@ -261,5 +261,4 @@ description.
 .. _`Apache License 2.0`: http://www.apache.org/licenses/LICENSE-2.0
 .. _`context manager`: https://docs.python.org/3.6/library/stdtypes.html#context-manager-types
 .. _`scope`: https://docs.pytest.org/en/latest/fixture.html#scope-sharing-a-fixture-instance-across-tests-in-a-class-module-or-session
-.. _``pytest doesn't expect fixtures`: https://github.com/pytest-dev/pytest/issues/3664
-  to have markers`
+.. _`pytest doesn't expect fixtures to have markers`: https://github.com/pytest-dev/pytest/issues/3664
