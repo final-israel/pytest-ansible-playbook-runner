@@ -101,19 +101,26 @@ def get_empty_marker_error(marker_type):
 
 
 @contextlib.contextmanager
-def runner(request, setup_playbooks=None, teardown_playbooks=None):
+def runner(
+        request,
+        setup_playbooks=None,
+        teardown_playbooks=None,
+        skip_teardown=False):
     """
     Context manager which will run playbooks specified in it's arguments.
 
     :param request: pytest request object
     :param setup_playbooks: list of setup playbook names (optional)
     :param teardown_playbooks: list of setup playbook names (optional)
+    :param skip_teardown:
+        if True, teardown playbooks are not executed when test case fails
 
     It's expected to be used to build custom fixtures or to be used
     directly in a test case code.
     """
     setup_playbooks = setup_playbooks or []
     teardown_playbooks = teardown_playbooks or []
+    run_teardown = True
     # process request object
     directory = request.config.option.ansible_playbook_directory
     inventory = request.config.option.ansible_playbook_inventory
@@ -124,12 +131,17 @@ def runner(request, setup_playbooks=None, teardown_playbooks=None):
             cwd=directory)
     try:
         yield
+    except Exception as ex:
+        if skip_teardown:
+            run_teardown = False
+        raise ex
     finally:
-        # teardown
-        for playbook_file in teardown_playbooks:
-            subprocess.check_call(
-                get_ansible_cmd(inventory, playbook_file),
-                cwd=directory)
+        if run_teardown:
+            # teardown
+            for playbook_file in teardown_playbooks:
+                subprocess.check_call(
+                    get_ansible_cmd(inventory, playbook_file),
+                    cwd=directory)
 
 
 @pytest.fixture

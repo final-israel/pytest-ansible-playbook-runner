@@ -160,6 +160,7 @@ Creating custom fixture this way is useful when you want to:
   (to overcome the fact that you can't use ``ansible_playbook`` fixture to run
   setup/teardown for another fixture, because `pytest doesn't expect fixtures
   to have markers`_).
+* specify that teardown playbooks are skipped when a test case fails
 
 Example of simple custom fixture::
 
@@ -189,6 +190,13 @@ And here is an example of using the fixture inside a test case directly::
             # code here is executed after the setup playbooks, but before the
             # teardown ones
             assert 1 == 1
+
+If you want to avoid running teardown playbook(s) when a test case fails, use
+``skip_teardown`` argument of the runner::
+
+    with runner(
+            request, teardown_playbooks=['teardown.yml'], skip_teardown=True):
+        assert 1 == 0
 
 
 Contributing

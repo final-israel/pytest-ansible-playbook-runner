@@ -41,6 +41,40 @@ def test_runner_intest_checkfile(
     assert result.ret == 1
 
 
+def test_runner_skip_teardown(
+        testdir, inventory, testfile_playbook_generator):
+    """
+    Make sure that ``pytest_ansible_playbook.runner`` context manager actually
+    executes given playbook when used in a test case.
+    """
+    playbook, test_file_path, test_file_content = \
+        testfile_playbook_generator.get()
+    # create a temporary pytest test module
+    testdir.makepyfile(textwrap.dedent("""\
+        from pytest_ansible_playbook import runner
+
+        def test_bar(request):
+            with runner(
+                    request, teardown_playbooks=['{0}'], skip_teardown=True):
+                assert 1 == 0
+        """.format(playbook.basename)))
+    # run pytest with the following cmd args
+    result = testdir.runpytest(
+        '--ansible-playbook-directory={0}'.format(playbook.dirname),
+        '--ansible-playbook-inventory={0}'.format(inventory.basename),
+        '-v',
+        )
+    # fnmatch_lines does an assertion internally
+    result.stdout.fnmatch_lines([
+        '*::test_bar FAILED*',
+        ])
+    # check that test_file hasn't been created
+    with pytest.raises(IOError):
+        open(test_file_path, 'r')
+    # make sure that that we get a '1' exit code for the testsuite
+    assert result.ret == 1
+
+
 @pytest.mark.parametrize("scope", ["function", "module", "class", "session"])
 @pytest.mark.parametrize("marker_type", ["setup", "teardown"])
 def test_customfixture_scope_checkfile(
