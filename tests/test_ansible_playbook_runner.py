@@ -100,7 +100,8 @@ def test_customfixture_sessionscope_teardown_checkfile(
 
         @pytest.fixture(scope="session")
         def some_fixture(request):
-            with runner(request, ['{setup_playbook}'], ['{teardown_playbook}']):
+            with runner(
+                    request, ['{setup_playbook}'], ['{teardown_playbook}']):
                 yield
 
         def test_proper_teardown_one(some_fixture):
