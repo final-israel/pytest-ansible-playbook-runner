@@ -21,6 +21,7 @@ Implementation of pytest-ansible-playbook plugin.
 from __future__ import print_function
 import os
 import subprocess
+import contextlib
 
 import pytest
 
@@ -51,7 +52,7 @@ def pytest_configure(config):
     Validate pytest-ansible-playbook options: when such option is used,
     the given file or directory should exist.
 
-    This check makes the pytest fail immediatelly when wrong path is
+    This check makes the pytest fail immediately when wrong path is
     specified, without waiting for the first test case with ansible_playbook
     fixture to fail.
     """
@@ -99,6 +100,38 @@ def get_empty_marker_error(marker_type):
     return msg.format(marker_type)
 
 
+@contextlib.contextmanager
+def runner(request, setup_playbooks=None, teardown_playbooks=None):
+    """
+    Context manager which will run playbooks specified in it's arguments.
+
+    :param request: pytest request object
+    :param setup_playbooks: list of setup playbook names (optional)
+    :param teardown_playbooks: list of setup playbook names (optional)
+
+    It's expected to be used to build custom fixtures or to be used
+    directly in a test case code.
+    """
+    setup_playbooks = setup_playbooks or []
+    teardown_playbooks = teardown_playbooks or []
+    # process request object
+    directory = request.config.option.ansible_playbook_directory
+    inventory = request.config.option.ansible_playbook_inventory
+    # setup
+    for playbook_file in setup_playbooks:
+        subprocess.check_call(
+            get_ansible_cmd(inventory, playbook_file),
+            cwd=directory)
+    try:
+        yield
+    finally:
+        # teardown
+        for playbook_file in teardown_playbooks:
+            subprocess.check_call(
+                get_ansible_cmd(inventory, playbook_file),
+                cwd=directory)
+
+
 @pytest.fixture
 def ansible_playbook(request):
     """
@@ -129,18 +162,5 @@ def ansible_playbook(request):
         if len(teardown_marker.args) == 0:
             raise Exception(get_empty_marker_error("teardown"))
 
-    # setup
-    for playbook_file in setup_playbooks:
-        subprocess.check_call(
-            get_ansible_cmd(
-                request.config.option.ansible_playbook_inventory,
-                playbook_file),
-            cwd=request.config.option.ansible_playbook_directory)
-    yield
-    # teardown
-    for playbook_file in teardown_playbooks:
-        subprocess.check_call(
-            get_ansible_cmd(
-                request.config.option.ansible_playbook_inventory,
-                playbook_file),
-            cwd=request.config.option.ansible_playbook_directory)
+    with runner(request, setup_playbooks, teardown_playbooks):
+        yield

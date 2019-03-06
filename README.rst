@@ -24,7 +24,12 @@ Features
 --------
 
 * The plugin provides ``ansible_playbook`` `pytest fixture`_, which allows
-  one to run one or more ansible playbooks during test setup or tear down.
+  one to run one or more ansible playbooks during test setup or tear down of a
+  test case.
+
+* It also provides `context manager`_ ``pytest_ansible_playbook.runner()``
+  which can be used to build custom fixtures with any `scope`_ or to execute
+  setup and/or teardown playbooks in a code of a test case.
 
 * It's compatible with both python2 and python3 (playbooks are executed via
   running ``ansible-playbook`` in subprocess instead of using api
@@ -138,6 +143,54 @@ Also note that using a marker without any playbook parameter or using the
 fixture without any marker is not valid and would cause an error.
 
 
+Using ansible playbook runner function
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Function ``pytest_ansible_playbook.runner`` is a `context manager`_ which can
+be used either to create a custom `pytest fixture`_  or to run playbooks within
+a test case.
+
+Creating custom fixture this way is useful when you want to:
+
+* define set of setup/teardown playbooks and use it with multiple test cases,
+* run setup or teardown playbooks in any fixture `scope`_
+  (to overcome the fact that ``ansible_playbook`` has ``fuction`` scope),
+* combine run of given setup/teardown playbooks with other non
+  ansible setup or teardown steps
+  (to overcome the fact that you can't use ``ansible_playbook`` fixture to run
+  setup/teardown for another fixture, because `pytest doesn't expect fixtures
+  to have markers`_).
+
+Example of simple custom fixture::
+
+    iport pytest
+    from pytest_ansible_playbook import runner
+
+    @pytest.fixture(scope="session")
+    def custom_fixture(request):
+        setup_playbooks = ['setup_foo.yml', 'setup_bar.yml']
+        teardown_playbooks = ['teardown_foo.yml', 'teardown_bar.yml']
+        with runner(request, setup_playbooks, teardown_playbooks):
+            # here comes code executed during setup, after running the setup
+            # playbooks
+            yield
+            # here you can place code to be executed during teardown, but
+            # before running the teardown playbooks
+
+    def test_bar(custom_fixture):
+        assert 1 == 1
+
+And here is an example of using the fixture inside a test case directly::
+
+    from pytest_ansible_playbook import runner
+
+    def test_foo(request):
+        with runner(request, ['setup_foo.yml'], ['teardown_foo.yml']):
+            # code here is executed after the setup playbooks, but before the
+            # teardown ones
+            assert 1 == 1
+
+
 Contributing
 ------------
 
@@ -177,3 +230,6 @@ description.
 .. _`ansible facts`: https://docs.ansible.com/ansible/playbooks_variables.html#information-discovered-from-systems-facts
 .. _`ansible inventory`: https://docs.ansible.com/ansible/intro_inventory.html
 .. _`Apache License 2.0`: http://www.apache.org/licenses/LICENSE-2.0
+.. _`context manager`: https://docs.python.org/3.6/library/stdtypes.html#context-manager-types
+.. _`scope`: https://docs.pytest.org/en/latest/fixture.html#scope-sharing-a-fixture-instance-across-tests-in-a-class-module-or-session
+.. _`pytest doesn't expect fixtures to have markers`: https://github.com/pytest-dev/pytest/issues/3664
