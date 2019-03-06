@@ -1,0 +1,12 @@
+v0.4.0 (unreleased)
+-------------------
+
+- Provide context manager for running playbooks,
+  see: https://gitlab.com/mbukatov/pytest-ansible-playbook/merge_requests/4
+
+- Move to python 3.6
+
+v0.3.0 (2016-11-04)
+-------------------
+
+- First official public release on PyPI.
