@@ -1,1 +1,7 @@
-Project pytest-ansible-playbook is written and maintained by Martin Bukatovič <martin.bukatovic@gmail.com>.
+Project pytest-ansible-playbook is written and maintained by Martin Bukatovič
+<martin.bukatovic@gmail.com>.
+
+Patches and contributions:
+
+* Elena Bondarenko
+* Tyler Goodlet 
