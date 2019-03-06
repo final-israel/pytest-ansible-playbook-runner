@@ -104,7 +104,13 @@ def get_empty_marker_error(marker_type):
 def runner(request, setup_playbooks=None, teardown_playbooks=None):
     """
     Context manager which will run playbooks specified in it's arguments.
-    It can be used to build fixtures with any scope.
+
+    :param request: pytest request object
+    :param setup_playbooks: list of setup playbook names (optional)
+    :param teardown_playbooks: list of setup playbook names (optional)
+
+    It's expected to be used to build custom fixtures or to be used
+    directly in a test case code.
     """
     setup_playbooks = setup_playbooks or []
     teardown_playbooks = teardown_playbooks or []
@@ -125,27 +131,7 @@ def runner(request, setup_playbooks=None, teardown_playbooks=None):
 
 
 @pytest.fixture
-def ansible_playbook_context(request):
-    """
-    Deliver a context manager which will run playbooks specified in it's
-    arguments.
-
-    This fixture doesn't run playbooks in setup or teardown phase of a test
-    case. It's expected to be used to build other fixture functions (unless you
-    need to define scope of the fixture) or to be used directly in a test case
-    code.
-
-    See also section about "factory as fixture" pattern in pytest docs:
-    https://docs.pytest.org/en/latest/fixture.html#factories-as-fixtures
-    """
-    def _runner(setup_playbooks=None, teardown_playbooks=None):
-        return runner(request, setup_playbooks, teardown_playbooks)
-
-    return _runner
-
-
-@pytest.fixture
-def ansible_playbook(request, ansible_playbook_context):
+def ansible_playbook(request):
     """
     Pytest fixture which runs given ansible playbook. When ansible returns
     nonzero return code, the test case which uses this fixture is not
@@ -174,5 +160,5 @@ def ansible_playbook(request, ansible_playbook_context):
         if len(teardown_marker.args) == 0:
             raise Exception(get_empty_marker_error("teardown"))
 
-    with ansible_playbook_context(setup_playbooks, teardown_playbooks):
+    with runner(request, setup_playbooks, teardown_playbooks):
         yield
