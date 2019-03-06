@@ -33,14 +33,10 @@ def test_runner_intest_checkfile(
     result.stdout.fnmatch_lines([
         '*::test_bar FAILED*',
         ])
-    # check that test_file has been created only for setup playbook
-    if marker_type == "setup":
-        with open(test_file_path, 'r') as test_file_object:
-            content = test_file_object.read()
-            assert content == test_file_content + "\n"
-    else:
-        with pytest.raises(IOError):
-            open(test_file_path, 'r')
+    # check that test_file has been created
+    with open(test_file_path, 'r') as test_file_object:
+        content = test_file_object.read()
+        assert content == test_file_content + "\n"
     # make sure that that we get a '1' exit code for the testsuite
     assert result.ret == 1
 

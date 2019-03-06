@@ -122,12 +122,14 @@ def runner(request, setup_playbooks=None, teardown_playbooks=None):
         subprocess.check_call(
             get_ansible_cmd(inventory, playbook_file),
             cwd=directory)
-    yield
-    # teardown
-    for playbook_file in teardown_playbooks:
-        subprocess.check_call(
-            get_ansible_cmd(inventory, playbook_file),
-            cwd=directory)
+    try:
+        yield
+    finally:
+        # teardown
+        for playbook_file in teardown_playbooks:
+            subprocess.check_call(
+                get_ansible_cmd(inventory, playbook_file),
+                cwd=directory)
 
 
 @pytest.fixture
