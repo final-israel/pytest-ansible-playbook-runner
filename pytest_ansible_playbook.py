@@ -52,7 +52,7 @@ def pytest_configure(config):
     Validate pytest-ansible-playbook options: when such option is used,
     the given file or directory should exist.
 
-    This check makes the pytest fail immediatelly when wrong path is
+    This check makes the pytest fail immediately when wrong path is
     specified, without waiting for the first test case with ansible_playbook
     fixture to fail.
     """
@@ -103,7 +103,7 @@ def get_empty_marker_error(marker_type):
 @contextlib.contextmanager
 def runner(request, setup_playbooks=None, teardown_playbooks=None):
     """
-    Context manager which will run playbooks specified in it's arugments.
+    Context manager which will run playbooks specified in it's arguments.
     It can be used to build fixtures with any scope.
     """
     setup_playbooks = setup_playbooks or []
@@ -128,7 +128,7 @@ def runner(request, setup_playbooks=None, teardown_playbooks=None):
 def ansible_playbook_context(request):
     """
     Deliver a context manager which will run playbooks specified in it's
-    arugments.
+    arguments.
 
     This fixture doesn't run playbooks in setup or teardown phase of a test
     case. It's expected to be used to build other fixture functions (unless you
