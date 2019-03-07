@@ -7,6 +7,9 @@ v0.4.0 (unreleased)
 - Add runner option ``skip_teardown`` to skip teardown playbooks when test
   case fails
 
+- Resolve compatibility issue with pytest 4,
+  see: https://gitlab.com/mbukatov/pytest-ansible-playbook/issues/6
+
 - Move to python 3.6
 
 v0.3.0 (2016-11-04)

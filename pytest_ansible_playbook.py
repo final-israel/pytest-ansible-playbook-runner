@@ -151,12 +151,31 @@ def ansible_playbook(request):
     nonzero return code, the test case which uses this fixture is not
     executed and ends in ``ERROR`` state.
     """
-    setup_marker = request.node.get_marker('ansible_playbook_setup')
     setup_playbooks = []
-    teardown_marker = request.node.get_marker('ansible_playbook_teardown')
     teardown_playbooks = []
 
-    if setup_marker is None and teardown_marker is None:
+    if hasattr(request.node, "get_marker"):
+        marker = request.node.get_marker('ansible_playbook_setup')
+        setup_ms = [marker] if marker is not None else []
+        marker = request.node.get_marker('ansible_playbook_teardown')
+        teardown_ms = [marker] if marker is not None else []
+    else:
+        # since pytest 4.0.0, markers api changed, see:
+        # https://github.com/pytest-dev/pytest/pull/4564
+        # https://docs.pytest.org/en/latest/mark.html#updating-code
+        setup_ms = request.node.iter_markers('ansible_playbook_setup')
+        teardown_ms = request.node.iter_markers('ansible_playbook_teardown')
+
+    for marker in setup_ms:
+        if len(marker.args) == 0:
+            raise Exception(get_empty_marker_error("setup"))
+        setup_playbooks.extend(marker.args)
+    for marker in teardown_ms:
+        if len(marker.args) == 0:
+            raise Exception(get_empty_marker_error("teardown"))
+        teardown_playbooks.extend(marker.args)
+
+    if len(setup_playbooks) == 0 and len(teardown_playbooks) == 0:
         msg = (
             "no ansible playbook is specified for the test case, "
             "please add a decorator like this one "
@@ -165,14 +184,6 @@ def ansible_playbook(request):
             "``@pytest.mark.ansible_playbook_teardown('playbook.yml')`` "
             "for ansible_playbook fixture to know which playbook to use")
         raise Exception(msg)
-    if setup_marker is not None:
-        setup_playbooks = setup_marker.args
-        if len(setup_marker.args) == 0:
-            raise Exception(get_empty_marker_error("setup"))
-    if teardown_marker is not None:
-        teardown_playbooks = teardown_marker.args
-        if len(teardown_marker.args) == 0:
-            raise Exception(get_empty_marker_error("teardown"))
 
     with runner(request, setup_playbooks, teardown_playbooks):
         yield

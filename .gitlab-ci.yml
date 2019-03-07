@@ -7,7 +7,7 @@ py27:
   script:
     - pip install tox
     - pip install ansible
-    - tox -e py27
+    - tox -e py27-{pytest_oldest,pytest_latest}
 
 py36:
   image: python:3.6
@@ -15,7 +15,7 @@ py36:
   script:
     - pip install tox
     - pip install ansible
-    - tox -e py36
+    - tox -e py36-{pytest_oldest,pytest_latest}
 
 flake8:
   image: python:3.6

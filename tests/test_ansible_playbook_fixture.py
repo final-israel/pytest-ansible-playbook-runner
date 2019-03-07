@@ -253,7 +253,9 @@ def test_missing_mark(testdir, inventory, minimal_playbook):
 
 
 @pytest.mark.parametrize("marker_type", ["setup", "teardown"])
-def test_empty_mark(testdir, inventory, minimal_playbook, marker_type):
+@pytest.mark.parametrize("emptiness", ["", "()"])
+def test_empty_mark(
+        testdir, inventory, minimal_playbook, marker_type, emptiness):
     """
     Make sure that test cases ends in ERROR state when a test case is
     marked with empty marker decorator
@@ -263,10 +265,10 @@ def test_empty_mark(testdir, inventory, minimal_playbook, marker_type):
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook_{0}()
+        @pytest.mark.ansible_playbook_{0}{1}
         def test_foo(ansible_playbook):
             assert 1 == 1
-        """.format(marker_type)))
+        """.format(marker_type, emptiness)))
     # run pytest with the following cmd args
     result = testdir.runpytest(
         '--ansible-playbook-directory={0}'.format(minimal_playbook.dirname),
