@@ -1,4 +1,4 @@
-v0.4.1 (unreleased)
+v0.4.1 (2019-03-08)
 -------------------
 
 - Resolve compatibility issue with early pytest 4 versions, such as 4.0.0
