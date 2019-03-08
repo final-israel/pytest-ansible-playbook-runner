@@ -154,17 +154,17 @@ def ansible_playbook(request):
     setup_playbooks = []
     teardown_playbooks = []
 
-    if hasattr(request.node, "get_marker"):
-        marker = request.node.get_marker('ansible_playbook_setup')
-        setup_ms = [marker] if marker is not None else []
-        marker = request.node.get_marker('ansible_playbook_teardown')
-        teardown_ms = [marker] if marker is not None else []
-    else:
+    if hasattr(request.node, "iter_markers"):
         # since pytest 4.0.0, markers api changed, see:
         # https://github.com/pytest-dev/pytest/pull/4564
         # https://docs.pytest.org/en/latest/mark.html#updating-code
         setup_ms = request.node.iter_markers('ansible_playbook_setup')
         teardown_ms = request.node.iter_markers('ansible_playbook_teardown')
+    else:
+        marker = request.node.get_marker('ansible_playbook_setup')
+        setup_ms = [marker] if marker is not None else []
+        marker = request.node.get_marker('ansible_playbook_teardown')
+        teardown_ms = [marker] if marker is not None else []
 
     for marker in setup_ms:
         if len(marker.args) == 0:
