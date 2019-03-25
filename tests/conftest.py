@@ -77,6 +77,17 @@ def testfile_playbook_generator(testdir):
             # generate random content of the test file
             test_file_content = "".join(
                 random.choice(string.ascii_letters) for _ in range(15))
+
+            out_playbook = testdir.makefile(
+                "write_task_output_to_file.yml",
+                "---",
+                "- name: Write to file",
+                "  lineinfile:",
+                '    path: "{{output_path}}/{{inventory_hostname}}.json"',
+                '    line: "[{{task_result_to_output | to_json}}], "',
+                "  delegate_to: localhost",
+            )
+
             # create ansbile playbook file(which would create file on
             # test_file_path with test_file_content in it)
             playbook = testdir.makefile(
@@ -91,7 +102,16 @@ def testfile_playbook_generator(testdir):
                 "       create=yes",
                 "       line={0}".format(test_file_content),
                 "       state=present",
+                "     register: task_result_to_output",
+                "     ignore_errors: yes",
+                "   - name: fail the task when not skipping errors",
+                "     fail:",
+                '       msg: "task failed: skip_errors={{skip_errors|bool}}"',
+                "     when: (not skip_errors|bool) and "
+                "(task_result_to_output is not success)",
+                '   - include: "./{0}"'.format(out_playbook.basename),
                 )
+
             PlaybookGenerator._id += 1
             return playbook, test_file_path, test_file_content
 

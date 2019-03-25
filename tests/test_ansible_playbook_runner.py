@@ -6,23 +6,24 @@ import textwrap
 import pytest
 
 
-@pytest.mark.parametrize("marker_type", ["setup", "teardown"])
-def test_runner_intest_checkfile(
-        testdir, inventory, testfile_playbook_generator, marker_type):
+def test_intest_runplaybook(
+        testdir, inventory, testfile_playbook_generator):
     """
-    Make sure that ``pytest_ansible_playbook.runner`` context manager actually
+    Make sure that run_playbook actually
     executes given playbook when used in a test case.
     """
     playbook, test_file_path, test_file_content = \
         testfile_playbook_generator.get()
     # create a temporary pytest test module
     testdir.makepyfile(textwrap.dedent("""\
-        from pytest_ansible_playbook import runner
+        import pytest
+        from pytest_ansible_playbook import ansible_playbook
 
-        def test_bar(request):
-            with runner(request, {0}_playbooks=['{1}']):
-                assert 1 == 0
-        """.format(marker_type, playbook.basename)))
+        def test_bar(ansible_playbook):
+            ret = ansible_playbook.run_playbook('{0}')
+            assert ret['localhost'][0]['msg'] == 'line added'
+            assert 1 == 0
+        """.format(playbook.basename)))
     # run pytest with the following cmd args
     result = testdir.runpytest(
         '--ansible-playbook-directory={0}'.format(playbook.dirname),
@@ -41,7 +42,7 @@ def test_runner_intest_checkfile(
     assert result.ret == 1
 
 
-def test_runner_skip_teardown(
+def test_skip_teardown(
         testdir, inventory, testfile_playbook_generator):
     """
     Make sure that ``pytest_ansible_playbook.runner`` context manager actually
@@ -51,12 +52,13 @@ def test_runner_skip_teardown(
         testfile_playbook_generator.get()
     # create a temporary pytest test module
     testdir.makepyfile(textwrap.dedent("""\
-        from pytest_ansible_playbook import runner
+        import pytest
+        from pytest_ansible_playbook import ansible_playbook
 
-        def test_bar(request):
-            with runner(
-                    request, teardown_playbooks=['{0}'], skip_teardown=True):
-                assert 1 == 0
+        @pytest.mark.ansible_playbook_teardown('{0}')
+        @pytest.mark.skip_teardown(True)
+        def test_bar(ansible_playbook):
+            assert 1 == 0
         """.format(playbook.basename)))
     # run pytest with the following cmd args
     result = testdir.runpytest(
@@ -88,16 +90,16 @@ def test_customfixture_scope_checkfile(
     # create a temporary pytest test module
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
-        from pytest_ansible_playbook import runner
+        from pytest_ansible_playbook import fixture_runner
 
         @pytest.fixture(scope="{2}")
         def some_fixture(request):
-            with runner(request, {0}_playbooks=['{1}']):
+            with fixture_runner(request, {0}_playbooks=[{1}]):
                 yield
 
         def test_bar(some_fixture):
             assert 1 == 0
-        """.format(marker_type, playbook.basename, scope)))
+        """.format(marker_type, {'file': playbook.basename}, scope)))
     # run pytest with the following cmd args
     result = testdir.runpytest(
         '--ansible-playbook-directory={0}'.format(playbook.dirname),
@@ -130,12 +132,12 @@ def test_customfixture_sessionscope_teardown_checkfile(
     # create a temporary pytest test module
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
-        from pytest_ansible_playbook import runner
+        from pytest_ansible_playbook import fixture_runner
 
         @pytest.fixture(scope="session")
         def some_fixture(request):
-            with runner(
-                    request, ['{setup_playbook}'], ['{teardown_playbook}']):
+            with fixture_runner(
+                    request, [{setup_playbook}], [{teardown_playbook}]):
                 yield
 
         def test_proper_teardown_one(some_fixture):
@@ -157,8 +159,8 @@ def test_customfixture_sessionscope_teardown_checkfile(
             with pytest.raises(IOError):
                 open('{teardown_file_path}', 'r')
         """.format(
-            setup_playbook=playbook_1.basename,
-            teardown_playbook=playbook_2.basename,
+            setup_playbook={'file': playbook_1.basename},
+            teardown_playbook={'file': playbook_2.basename},
             setup_file_path=filepath_1,
             setup_exp_content=content_1,
             teardown_file_path=filepath_2,

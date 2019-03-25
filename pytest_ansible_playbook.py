@@ -20,8 +20,10 @@ Implementation of pytest-ansible-playbook plugin.
 
 from __future__ import print_function
 import os
-import subprocess
+import uuid
 import contextlib
+from playbook_runner import playbook_runner
+
 
 import pytest
 
@@ -74,19 +76,6 @@ def pytest_configure(config):
         raise pytest.UsageError(msg)
 
 
-def get_ansible_cmd(inventory_file, playbook_file):
-    """
-    Return process args list for ansible-playbook run.
-    """
-    ansible_command = [
-        "ansible-playbook",
-        "-vv",
-        "-i", inventory_file,
-        playbook_file,
-        ]
-    return ansible_command
-
-
 def get_empty_marker_error(marker_type):
     """
     Generate error message for empty marker.
@@ -100,8 +89,98 @@ def get_empty_marker_error(marker_type):
     return msg.format(marker_type)
 
 
+def get_missing_file_error(marker_type, playbook):
+    """
+        Generate error message for empty marker.
+        """
+    msg = (
+        "no file is specified in "
+        "``@pytest.mark.ansible_playbook_{0}`` decorator "
+        "for the playbook - ``{1}``")
+    return msg.format(marker_type, playbook)
+
+
+class PytestAnsiblePlaybook(playbook_runner.AnsiblePlaybook):
+    def __init__(self, ansible_playbook_inventory, ansible_playbook_directory,
+                 request, session_uuid=None):
+        playbook_runner.AnsiblePlaybook.__init__(
+            self,
+            ansible_playbook_inventory,
+            ansible_playbook_directory,
+        )
+
+        self._request = request
+        self._setup_playbooks = []
+        self._teardown_playbooks = []
+
+        self.session_uuid = session_uuid
+        self.outputs = {
+            'setup': {},
+            'teardown': {},
+        }
+
+    def add_to_teardown(self, element):
+        self._teardown_playbooks.append(element)
+
+    def fill_from_custom(self, setup, teardown):
+        self._setup_playbooks = setup
+        self._teardown_playbooks = teardown
+
+    def fill_from_markers(self):
+        if hasattr(self._request.node, "iter_markers"):
+            # since pytest 4.0.0, markers api changed, see:
+            # https://github.com/pytest-dev/pytest/pull/4564
+            # https://docs.pytest.org/en/latest/mark.html#updating-code
+            setup_ms = self._request.node.iter_markers(
+                'ansible_playbook_setup')
+            teardown_ms = self._request.node.iter_markers(
+                'ansible_playbook_teardown')
+        else:
+            marker = self._request.node.get_marker('ansible_playbook_setup')
+            setup_ms = [marker] if marker is not None else []
+            marker = self._request.node.get_marker('ansible_playbook_teardown')
+            teardown_ms = [marker] if marker is not None else []
+
+        for marker in setup_ms:
+            if len(marker.args) == 0:
+                raise Exception(get_empty_marker_error("setup"))
+            # extend because multiple mark entries are supported
+            self._setup_playbooks.extend(marker.args)
+        for marker in teardown_ms:
+            if len(marker.args) == 0:
+                raise Exception(get_empty_marker_error("teardown"))
+            # extend because multiple mark entries are supported
+            self._teardown_playbooks.extend(list(marker.args))
+
+    def setup(self):
+        for playbook in self._setup_playbooks:
+            if 'file' not in playbook:
+                raise Exception(get_missing_file_error("setup", playbook))
+
+            extra_vars = {}
+            if 'extra_vars' in playbook:
+                for k, v in playbook['extra_vars'].items():
+                    extra_vars[k] = v
+
+            self.outputs['setup'][playbook['file']] = \
+                self.run_playbook(playbook['file'], extra_vars)
+
+    def teardown(self):
+        for playbook in self._teardown_playbooks:
+            if 'file' not in playbook:
+                raise Exception(get_missing_file_error("teardown", playbook))
+
+            extra_vars = {}
+            if 'extra_vars' in playbook:
+                for k, v in playbook['extra_vars'].items():
+                    extra_vars[k] = v
+
+            self.outputs['teardown'][playbook['file']] = \
+                self.run_playbook(playbook['file'], extra_vars)
+
+
 @contextlib.contextmanager
-def runner(
+def fixture_runner(
         request,
         setup_playbooks=None,
         teardown_playbooks=None,
@@ -120,15 +199,41 @@ def runner(
     """
     setup_playbooks = setup_playbooks or []
     teardown_playbooks = teardown_playbooks or []
-    run_teardown = True
+
     # process request object
     directory = request.config.option.ansible_playbook_directory
     inventory = request.config.option.ansible_playbook_inventory
+
+    pap = PytestAnsiblePlaybook(
+        inventory,
+        directory,
+        request,
+    )
+
+    pap.fill_from_custom(setup_playbooks, teardown_playbooks)
+    with runner(pap, skip_teardown):
+        yield pap
+
+
+@contextlib.contextmanager
+def runner(pap, skip_teardown=False):
+    """
+    Context manager which will run playbooks specified in it's arguments.
+
+    :param request: pytest request object
+    :param setup_playbooks: list of setup playbook names (optional)
+    :param teardown_playbooks: list of setup playbook names (optional)
+    :param skip_teardown:
+        if True, teardown playbooks are not executed when test case fails
+
+    It's expected to be used to build custom fixtures or to be used
+    directly in a test case code.
+    """
+    run_teardown = True
+
     # setup
-    for playbook_file in setup_playbooks:
-        subprocess.check_call(
-            get_ansible_cmd(inventory, playbook_file),
-            cwd=directory)
+    pap.setup()
+
     try:
         yield
     except Exception as ex:
@@ -138,52 +243,50 @@ def runner(
     finally:
         if run_teardown:
             # teardown
-            for playbook_file in teardown_playbooks:
-                subprocess.check_call(
-                    get_ansible_cmd(inventory, playbook_file),
-                    cwd=directory)
+            pap.teardown()
 
 
-@pytest.fixture
-def ansible_playbook(request):
-    """
-    Pytest fixture which runs given ansible playbook. When ansible returns
-    nonzero return code, the test case which uses this fixture is not
-    executed and ends in ``ERROR`` state.
-    """
-    setup_playbooks = []
-    teardown_playbooks = []
+@pytest.fixture(scope='session')
+def session_uuid():
+    return uuid.uuid4()
+
+
+@pytest.fixture(scope='session')
+def ansible_playbook_directory(request):
+    path = os.path.abspath(
+        request.config.getoption('--ansible-playbook-directory'))
+    assert os.path.isdir(path)
+    return path
+
+
+@pytest.fixture(scope='session')
+def ansible_playbook_inventory(request):
+    path = os.path.abspath(
+        request.config.getoption('--ansible-playbook-inventory'))
+    assert os.path.isfile(path)
+    return path
+
+
+@pytest.fixture(scope='function')
+def ansible_playbook(request, ansible_playbook_directory,
+                     ansible_playbook_inventory, session_uuid):
+    pap = PytestAnsiblePlaybook(
+        ansible_playbook_inventory,
+        ansible_playbook_directory,
+        request,
+        session_uuid,
+    )
 
     if hasattr(request.node, "iter_markers"):
-        # since pytest 4.0.0, markers api changed, see:
-        # https://github.com/pytest-dev/pytest/pull/4564
-        # https://docs.pytest.org/en/latest/mark.html#updating-code
-        setup_ms = request.node.iter_markers('ansible_playbook_setup')
-        teardown_ms = request.node.iter_markers('ansible_playbook_teardown')
+        skip_teardown = request.node.get_closest_marker(
+            'skip_teardown',
+            default=False
+        )
     else:
-        marker = request.node.get_marker('ansible_playbook_setup')
-        setup_ms = [marker] if marker is not None else []
-        marker = request.node.get_marker('ansible_playbook_teardown')
-        teardown_ms = [marker] if marker is not None else []
+        skip_teardown = request.node.get_marker('skip_teardown')
+        if skip_teardown is None:
+            skip_teardown = False
 
-    for marker in setup_ms:
-        if len(marker.args) == 0:
-            raise Exception(get_empty_marker_error("setup"))
-        setup_playbooks.extend(marker.args)
-    for marker in teardown_ms:
-        if len(marker.args) == 0:
-            raise Exception(get_empty_marker_error("teardown"))
-        teardown_playbooks.extend(marker.args)
-
-    if len(setup_playbooks) == 0 and len(teardown_playbooks) == 0:
-        msg = (
-            "no ansible playbook is specified for the test case, "
-            "please add a decorator like this one "
-            "``@pytest.mark.ansible_playbook_setup('playbook.yml')`` "
-            "or "
-            "``@pytest.mark.ansible_playbook_teardown('playbook.yml')`` "
-            "for ansible_playbook fixture to know which playbook to use")
-        raise Exception(msg)
-
-    with runner(request, setup_playbooks, teardown_playbooks):
-        yield
+    pap.fill_from_markers()
+    with runner(pap, skip_teardown):
+        yield pap

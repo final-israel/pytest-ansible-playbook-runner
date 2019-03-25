@@ -16,10 +16,10 @@ def test_simple(testdir, inventory, minimal_playbook, marker_type):
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook_{0}('{1}')
+        @pytest.mark.ansible_playbook_{0}({1})
         def test_foo(ansible_playbook):
             assert 1 == 1
-        """.format(marker_type, minimal_playbook.basename)))
+        """.format(marker_type, {'file': minimal_playbook.basename})))
     # run pytest with the following cmd args
     result = testdir.runpytest(
         '--ansible-playbook-directory={0}'.format(minimal_playbook.dirname),
@@ -30,49 +30,6 @@ def test_simple(testdir, inventory, minimal_playbook, marker_type):
     result.stdout.fnmatch_lines(['*::test_foo PASSED*'])
     # make sure that that we get a '0' exit code for the testsuite
     assert result.ret == 0
-
-
-@pytest.mark.parametrize("marker_type", ["setup", "teardown"])
-def test_simple_usedbyfixture(
-        testdir,
-        inventory,
-        minimal_playbook,
-        marker_type):
-    """
-    Check what happens when ``ansible_playbook`` fixture is used with a fixtrue
-    by running very simple playbook which has no side effects.
-
-    This is expected to end with ERROR as mark has no effect in fixture
-    functions, see also:
-
-     * https://gitlab.com/mbukatov/pytest-ansible-playbook/issues/4
-     * https://github.com/pytest-dev/pytest/issues/3664
-
-    I keep it here as a reference and to be able to notice any changes related
-    to this use case in pytest.
-    """
-    # create a temporary pytest test module
-    testdir.makepyfile(textwrap.dedent("""\
-        import pytest
-
-        @pytest.mark.ansible_playbook_{0}('{1}')
-        @pytest.fixture
-        def fixture_foo(ansible_playbook):
-            return 1
-
-        def test_foo(fixture_foo):
-            assert 1 == fixture_foo
-        """.format(marker_type, minimal_playbook.basename)))
-    # run pytest with the following cmd args
-    result = testdir.runpytest(
-        '--ansible-playbook-directory={0}'.format(minimal_playbook.dirname),
-        '--ansible-playbook-inventory={0}'.format(inventory.basename),
-        '-v',
-        )
-    # fnmatch_lines does an assertion internally
-    result.stdout.fnmatch_lines(['*::test_foo ERROR*'])
-    # make sure that that we get a '1' exit code for the testsuite
-    assert result.ret == 1
 
 
 @pytest.mark.parametrize("marker_type", ["setup", "teardown"])
@@ -88,14 +45,14 @@ def test_checkfile(
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook_{0}('{1}')
+        @pytest.mark.ansible_playbook_{0}({1})
         def test_foo(ansible_playbook):
             assert 1 == 1
 
-        @pytest.mark.ansible_playbook_{0}('{1}')
+        @pytest.mark.ansible_playbook_{0}({1})
         def test_bar(ansible_playbook):
             assert 1 == 0
-        """.format(marker_type, playbook.basename)))
+        """.format(marker_type, {'file': playbook.basename})))
     # run pytest with the following cmd args
     result = testdir.runpytest(
         '--ansible-playbook-directory={0}'.format(playbook.dirname),
@@ -120,15 +77,15 @@ def test_checkfile(
     pytest.param(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook_{0}('{1}')
-        @pytest.mark.ansible_playbook_{0}('{2}')
+        @pytest.mark.ansible_playbook_{0}({1})
+        @pytest.mark.ansible_playbook_{0}({2})
         def test_1(ansible_playbook):
             assert 1 == 1
         """), id="twomarkers"),
     pytest.param(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook_{0}('{1}', '{2}')
+        @pytest.mark.ansible_playbook_{0}({1}, {2})
         def test_1(ansible_playbook):
             assert 1 == 1
         """), id="onemarker"),
@@ -147,7 +104,11 @@ def test_two_checkfile(
     playbook_2, filepath_2, content_2 = testfile_playbook_generator.get()
     # create a temporary pytest test module
     testdir.makepyfile(pytest_case.format(
-        marker_type, playbook_1.basename, playbook_2.basename))
+        marker_type,
+        {'file': playbook_1.basename},
+        {'file': playbook_2.basename}
+    ))
+
     # check assumption of this test case, if this fails, we need to rewrite
     # this test case so that both playbook files ends in the same directory
     assert playbook_1.dirname == playbook_2.dirname
@@ -189,8 +150,8 @@ def test_teardown_checkfile(testdir, inventory, testfile_playbook_generator):
     testdir.makepyfile(textwrap.dedent("""\
         import pytest
 
-        @pytest.mark.ansible_playbook_setup('{setup_playbook}')
-        @pytest.mark.ansible_playbook_teardown('{teardown_playbook}')
+        @pytest.mark.ansible_playbook_setup({setup_playbook})
+        @pytest.mark.ansible_playbook_teardown({teardown_playbook})
         def test_proper_teardown(ansible_playbook):
             with open('{setup_file_path}', 'r') as test_file_object:
                 content = test_file_object.read()
@@ -198,8 +159,8 @@ def test_teardown_checkfile(testdir, inventory, testfile_playbook_generator):
             with pytest.raises(IOError):
                 open('{teardown_file_path}', 'r')
         """.format(
-            setup_playbook=playbook_1.basename,
-            teardown_playbook=playbook_2.basename,
+            setup_playbook={'file': playbook_1.basename},
+            teardown_playbook={'file': playbook_2.basename},
             setup_file_path=filepath_1,
             setup_exp_content=content_1,
             teardown_file_path=filepath_2,
@@ -228,7 +189,7 @@ def test_teardown_checkfile(testdir, inventory, testfile_playbook_generator):
 
 def test_missing_mark(testdir, inventory, minimal_playbook):
     """
-    Make sure that test cases ends in ERROR state when a test case is not
+    Make sure that test cases ends in PASSED state when a test case is not
     marked with ``@pytest.mark.ansible_playbook_setup('playbook.yml')``.
     """
     # create a temporary pytest test module
@@ -246,10 +207,10 @@ def test_missing_mark(testdir, inventory, minimal_playbook):
         )
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
-        '*::test_foo ERROR*',
+        '*::test_foo PASSED*',
         ])
     # make sure that that we get a '1' exit code for the testsuite
-    assert result.ret == 1
+    assert result.ret == 0
 
 
 @pytest.mark.parametrize("marker_type", ["setup", "teardown"])
