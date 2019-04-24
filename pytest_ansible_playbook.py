@@ -23,8 +23,8 @@ import os
 import uuid
 import contextlib
 from playbook_runner import playbook_runner
-
-
+import subprocess
+import json
 import pytest
 
 
@@ -118,6 +118,23 @@ class PytestAnsiblePlaybook(playbook_runner.AnsiblePlaybook):
             'setup': {},
             'teardown': {},
         }
+        self._inventory = None
+
+    def get_inventory(self):
+        if self._inventory is not None:
+            return self._inventory
+
+        cmd = ['ansible-inventory', '-i', self._ansible_playbook_inventory, '--list']
+        proc = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        proc.wait(timeout=60)
+        stdout, stderr = proc.communicate(timeout=10)
+        self._inventory = json.loads(stdout.decode('utf-8'))
+
 
     def add_to_teardown(self, element):
         self._teardown_playbooks.append(element)
