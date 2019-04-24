@@ -134,6 +134,7 @@ class PytestAnsiblePlaybook(playbook_runner.AnsiblePlaybook):
         proc.wait(timeout=60)
         stdout, stderr = proc.communicate(timeout=10)
         self._inventory = json.loads(stdout.decode('utf-8'))
+        return self._inventory
 
 
     def add_to_teardown(self, element):
