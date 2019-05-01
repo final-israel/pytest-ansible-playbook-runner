@@ -1,5 +1,9 @@
-Project pytest-ansible-playbook is written and maintained by Martin Bukatovič
-<martin.bukatovic@gmail.com>.
+This project was forked from https://gitlab.com/mbukatov/pytest-ansible-playbook and
+moved to a new pypi package called pytest-ansible-playbook-runner. The fork was made after
+unsuccessful merge https://gitlab.com/mbukatov/pytest-ansible-playbook/merge_requests/5
+
+Project pytest-ansible-playbook-runner is written by Martin Bukatovič <martin.bukatovic@gmail.com> 
+and now is maintained by Pavel Rogovoy <pavelr@final.co.il>
 
 Patches and contributions:
 

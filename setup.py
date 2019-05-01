@@ -12,14 +12,14 @@ def read(fname):
 
 
 setup(
-    name='pytest-ansible-playbook',
-    version='0.4.2',
+    name='pytest-ansible-playbook-runner',
+    version='0.0.1',
     author='Martin Bukatovič',
     author_email='mbukatov@redhat.com',
-    maintainer='Martin Bukatovič',
-    maintainer_email='mbukatov@redhat.com',
+    maintainer='Pavel Rogovoy',
+    maintainer_email='pavelr@final.co.il',
     license='Apache 2.0',
-    url='https://gitlab.com/mbukatov/pytest-ansible-playbook',
+    url='https://github.com/final-israel/pytest-ansible-playbook-runner',
     description='Pytest fixture which runs given ansible playbook file.',
     long_description=read('README.rst'),
     py_modules=['pytest_ansible_playbook'],
@@ -30,8 +30,6 @@ setup(
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Testing',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
