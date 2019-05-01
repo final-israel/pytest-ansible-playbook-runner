@@ -23,36 +23,41 @@ along with `@hackebrot`_'s `Cookiecutter-pytest-plugin`_ template.
 Features
 --------
 
-Notes:
-~~~~~~~~~~~~~~~~~~~~~~~~~
+**Notes:**
 
-- The plugin provides ``ansible_playbook`` `pytest fixture`_, which allows
+- The plugin provides `ansible_playbook` `pytest fixture`_, which allows
   one to run one or more ansible playbooks during test setup or tear down of a
   test case.
-- It also provides `context manager`_ ``pytest_ansible_playbook.runner()``
+  
+- It also provides `context manager`_ `pytest_ansible_playbook.runner()`
   which can be used to build custom fixtures with any `scope`_ or to execute
   setup and/or teardown playbooks in a code of a test case.
+  
 - It's compatible with python3 (playbooks are executed via
-  running ``ansible-playbook`` in subprocess instead of using api
+  running `ansible-playbook` in subprocess instead of using api
   of ansible python module).
+  
 - Doesn't allow you to configure ansible in any way, all changes of ansible
   setup needs to be done in ansible playbooks, variable or config files.
   This encourages you to maintain a clear separation of ansible playbooks
   and the tests.
+  
+  
 
+**Key features:**
 
-
-Key features:
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-1. An option to run arbitrary playbooks in the middle of the test::
-  def test_something(ansible_playbook,....):
+1. An option to run arbitrary playbooks in the middle of the test:
+    
+    ```python
+    def test_something(ansible_playbook,....):
       ...
-      ansible_playbook.run_playbook('my_playbook.yml')
+  ansible_playbook.run_playbook('my_playbook.yml')
       ...
-
+      
+    ```
+    
 2. An option to add teardown playbooks in the middle of the test::
-  def test_something(ansible_playbook,....):
+    def test_something(ansible_playbook,....):
       ...
       ansible_playbook.add_to_teardown({'file': 'my_playbook.yml', 'extra_vars': {})
       ...
@@ -291,3 +296,7 @@ description.
 .. _`context manager`: https://docs.python.org/3.6/library/stdtypes.html#context-manager-types
 .. _`scope`: https://docs.pytest.org/en/latest/fixture.html#scope-sharing-a-fixture-instance-across-tests-in-a-class-module-or-session
 .. _`pytest doesn't expect fixtures to have markers`: https://github.com/pytest-dev/pytest/issues/3664
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
