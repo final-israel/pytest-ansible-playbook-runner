@@ -1,4 +1,4 @@
-pytest-ansible-playbook
+pytest-ansible-playbook-runner
 ===================================
 
 This repository contains `pytest`_ `plugin`_ which provides an easy way
@@ -23,22 +23,74 @@ along with `@hackebrot`_'s `Cookiecutter-pytest-plugin`_ template.
 Features
 --------
 
-* The plugin provides ``ansible_playbook`` `pytest fixture`_, which allows
+#### Notes:
+
+- The plugin provides ``ansible_playbook`` `pytest fixture`_, which allows
   one to run one or more ansible playbooks during test setup or tear down of a
   test case.
-
-* It also provides `context manager`_ ``pytest_ansible_playbook.runner()``
+- It also provides `context manager`_ ``pytest_ansible_playbook.runner()``
   which can be used to build custom fixtures with any `scope`_ or to execute
   setup and/or teardown playbooks in a code of a test case.
-
-* It's compatible with both python2 and python3 (playbooks are executed via
+- It's compatible with python3 (playbooks are executed via
   running ``ansible-playbook`` in subprocess instead of using api
   of ansible python module).
-
-* Doesn't allow you to configure ansible in any way, all changes of ansible
+- Doesn't allow you to configure ansible in any way, all changes of ansible
   setup needs to be done in ansible playbooks, variable or config files.
   This encourages you to maintain a clear separation of ansible playbooks
   and the tests.
+
+
+
+### Key features:
+
+1. An option to run arbitrary playbooks in the middle of the test
+```python
+def test_something(ansible_playbook,....):
+    ...
+    ansible_playbook.run_playbook('my_playbook.yml')
+    ...
+```
+2. An option to add teardown playbooks in the middle of the test:
+```python
+def test_something(ansible_playbook,....):
+    ...
+    ansible_playbook.add_to_teardown({'file': 'my_playbook.yml', 'extra_vars': {})
+    ...
+```
+3. Return values have been added to every playbook run. The return value respects playbook execution order and for every host:
+```python
+def test_something(ansible_playbook,....):
+    ...
+    ret = ansible_playbook.run_playbook('my_playbook.yml')
+    assert ret['localhost'][0]['msg'] == 'line added'
+```
+4. A test can pass arguments to the playbooks it runs. Thus the playbook has changed from string to dictionary:
+```python
+def test_something(ansible_playbook,....):
+    ...
+    ansible_playbook.run_playbook('my_playbook.yml', {'play_host_groupd': 'some_ansible_group', 'param1': 'value1'})
+    ...
+```
+5. Mark setup / teardown syntax:
+```python
+@pytest.mark.ansible_playbook_setup(
+    {'file': 'some_playbook.yml', 'extra_vars': {'play_host_groupd': 'some_ansible_group', 'param1': 'value1'}}
+)
+@pytest.mark.ansible_playbook_teardown(
+    {'file': 'my_teardown1.yml', 'extra_vars': {'play_host_groupd': 'some_ansible_group', 'param1': 'value1'}},
+    {'file': 'my_teardown2.yml', 'extra_vars': {'play_host_groupd': 'some_ansible_group', 'param1': 'value1'}}
+)
+def test_something(ansible_playbook,....):
+    ...
+    ansible_playbook.run_playbook('my_playbook.yml', {'play_host_groupd': 'some_ansible_group', 'param1': 'value1'})
+    ...
+```
+
+
+
+Now the pytest plugin uses a separate module: playbook_runner.
+https://github.com/final-israel/playbook_runner
+This is because other tools may want to also run playbooks not necessarily as a part of the pytest framework.
 
 
 Requirements
@@ -59,9 +111,9 @@ version from master branch.
 Installing stable release
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can install "pytest-ansible-playbook" via `pip`_ from `PyPI`_::
+You can install "pytest-ansible-playbook-runner" via `pip`_ from `PyPI`_::
 
-    $ pip install pytest-ansible-playbook
+    $ pip install pytest-ansible-playbook-runner
 
 
 Installing latest development version
@@ -70,7 +122,7 @@ Installing latest development version
 The suggested way to install from sources of current master branch is
 via `python virtual enviroment`_::
 
-    $ cd pytest-ansible-playbook
+    $ cd pytest-ansible-playbook-runner
     $ virtualenv .env
     $ source .env/bin/activate
     $ pip install -e .
@@ -166,7 +218,7 @@ Example of simple custom fixture::
 
     iport pytest
     from pytest_ansible_playbook import runner
-
+    
     @pytest.fixture(scope="session")
     def custom_fixture(request):
         setup_playbooks = ['setup_foo.yml', 'setup_bar.yml']
@@ -177,14 +229,14 @@ Example of simple custom fixture::
             yield
             # here you can place code to be executed during teardown, but
             # before running the teardown playbooks
-
+    
     def test_bar(custom_fixture):
         assert 1 == 1
 
 And here is an example of using the fixture inside a test case directly::
 
     from pytest_ansible_playbook import runner
-
+    
     def test_foo(request):
         with runner(request, ['setup_foo.yml'], ['teardown_foo.yml']):
             # code here is executed after the setup playbooks, but before the
@@ -210,7 +262,7 @@ License
 -------
 
 Distributed under the terms of the `Apache License 2.0`_ license,
-"pytest-ansible-playbook" is free and open source software
+"pytest-ansible-playbook-runner" is free and open source software
 
 
 Issues
@@ -219,7 +271,7 @@ Issues
 If you encounter any problems, please `file an issue`_ along with a detailed
 description.
 
-.. _`file an issue`: https://gitlab.com/mbukatov/pytest-ansible-playbook/issues
+.. _`file an issue`: https://github.com/final-israel/pytest-ansible-playbook-runner/issues
 .. _`Cookiecutter`: https://github.com/audreyr/cookiecutter
 .. _`@hackebrot`: https://github.com/hackebrot
 .. _`cookiecutter-pytest-plugin`: https://github.com/pytest-dev/cookiecutter-pytest-plugin
@@ -230,7 +282,7 @@ description.
 .. _`tox`: https://tox.readthedocs.io/en/latest/
 .. _`pip`: https://pypi.python.org/pypi/pip/
 .. _`PyPI`: https://pypi.python.org/pypi
-.. _`stable release from PyPI`: https://pypi.org/project/pytest-ansible-playbook/
+.. _`stable release from PyPI`: https://pypi.org/project/pytest-ansible-playbook-runner/
 .. _`python virtual enviroment`: https://virtualenv.pypa.io/en/stable/
 .. _`virtualenvwrapper`: https://virtualenvwrapper.readthedocs.io/en/latest/
 .. _`pytest-ansible`: https://pypi.python.org/pypi/pytest-ansible
