@@ -124,7 +124,12 @@ class PytestAnsiblePlaybook(playbook_runner.AnsiblePlaybook):
         if self._inventory is not None:
             return self._inventory
 
-        cmd = ['ansible-inventory', '-i', self._ansible_playbook_inventory, '--list']
+        cmd = [
+                'ansible-inventory',
+                '-i',
+                self._ansible_playbook_inventory,
+                '--list'
+                ]
         proc = subprocess.Popen(
             cmd,
             stdin=subprocess.PIPE,
@@ -135,7 +140,6 @@ class PytestAnsiblePlaybook(playbook_runner.AnsiblePlaybook):
         stdout, stderr = proc.communicate(timeout=10)
         self._inventory = json.loads(stdout.decode('utf-8'))
         return self._inventory
-
 
     def add_to_teardown(self, element):
         self._teardown_playbooks.append(element)
