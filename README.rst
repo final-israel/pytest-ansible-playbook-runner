@@ -23,7 +23,8 @@ along with `@hackebrot`_'s `Cookiecutter-pytest-plugin`_ template.
 Features
 --------
 
-#### Notes:
+Notes:
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - The plugin provides ``ansible_playbook`` `pytest fixture`_, which allows
   one to run one or more ansible playbooks during test setup or tear down of a
@@ -41,51 +42,48 @@ Features
 
 
 
-### Key features:
+Key features:
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. An option to run arbitrary playbooks in the middle of the test
-```python
-def test_something(ansible_playbook,....):
-    ...
-    ansible_playbook.run_playbook('my_playbook.yml')
-    ...
-```
-2. An option to add teardown playbooks in the middle of the test:
-```python
-def test_something(ansible_playbook,....):
-    ...
-    ansible_playbook.add_to_teardown({'file': 'my_playbook.yml', 'extra_vars': {})
-    ...
-```
-3. Return values have been added to every playbook run. The return value respects playbook execution order and for every host:
-```python
-def test_something(ansible_playbook,....):
-    ...
-    ret = ansible_playbook.run_playbook('my_playbook.yml')
-    assert ret['localhost'][0]['msg'] == 'line added'
-```
-4. A test can pass arguments to the playbooks it runs. Thus the playbook has changed from string to dictionary:
-```python
-def test_something(ansible_playbook,....):
-    ...
-    ansible_playbook.run_playbook('my_playbook.yml', {'play_host_groupd': 'some_ansible_group', 'param1': 'value1'})
-    ...
-```
-5. Mark setup / teardown syntax:
-```python
-@pytest.mark.ansible_playbook_setup(
-    {'file': 'some_playbook.yml', 'extra_vars': {'play_host_groupd': 'some_ansible_group', 'param1': 'value1'}}
-)
-@pytest.mark.ansible_playbook_teardown(
-    {'file': 'my_teardown1.yml', 'extra_vars': {'play_host_groupd': 'some_ansible_group', 'param1': 'value1'}},
-    {'file': 'my_teardown2.yml', 'extra_vars': {'play_host_groupd': 'some_ansible_group', 'param1': 'value1'}}
-)
-def test_something(ansible_playbook,....):
-    ...
-    ansible_playbook.run_playbook('my_playbook.yml', {'play_host_groupd': 'some_ansible_group', 'param1': 'value1'})
-    ...
-```
+1. An option to run arbitrary playbooks in the middle of the test::
+  def test_something(ansible_playbook,....):
+      ...
+      ansible_playbook.run_playbook('my_playbook.yml')
+      ...
 
+2. An option to add teardown playbooks in the middle of the test::
+  def test_something(ansible_playbook,....):
+      ...
+      ansible_playbook.add_to_teardown({'file': 'my_playbook.yml', 'extra_vars': {})
+      ...
+
+3. Return values have been added to every playbook run. The return value respects playbook execution order and for every host::
+
+  def test_something(ansible_playbook,....):
+      ...
+      ret = ansible_playbook.run_playbook('my_playbook.yml')
+      assert ret['localhost'][0]['msg'] == 'line added'
+
+4. A test can pass arguments to the playbooks it runs. Thus the playbook has changed from string to dictionary::
+
+  def test_something(ansible_playbook,....):
+      ...
+      ansible_playbook.run_playbook('my_playbook.yml', {'play_host_groupd': 'some_ansible_group', 'param1': 'value1'})
+      ...
+
+5. Mark setup / teardown syntax::
+
+  @pytest.mark.ansible_playbook_setup(
+      {'file': 'some_playbook.yml', 'extra_vars': {'play_host_groupd': 'some_ansible_group', 'param1': 'value1'}}
+  )
+  @pytest.mark.ansible_playbook_teardown(
+      {'file': 'my_teardown1.yml', 'extra_vars': {'play_host_groupd': 'some_ansible_group', 'param1': 'value1'}},
+      {'file': 'my_teardown2.yml', 'extra_vars': {'play_host_groupd': 'some_ansible_group', 'param1': 'value1'}}
+  )
+  def test_something(ansible_playbook,....):
+      ...
+      ansible_playbook.run_playbook('my_playbook.yml', {'play_host_groupd': 'some_ansible_group', 'param1': 'value1'})
+      ...
 
 
 Now the pytest plugin uses a separate module: playbook_runner.
@@ -216,7 +214,7 @@ Creating custom fixture this way is useful when you want to:
 
 Example of simple custom fixture::
 
-    iport pytest
+    import pytest
     from pytest_ansible_playbook import runner
     
     @pytest.fixture(scope="session")
