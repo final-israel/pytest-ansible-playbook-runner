@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name='pytest-ansible-playbook-runner',
-    version='0.0.3',
+    version='0.0.5',
     author='Martin Bukatovič',
     author_email='mbukatov@redhat.com',
     maintainer='Pavel Rogovoy',
@@ -22,6 +22,7 @@ setup(
     url='https://github.com/final-israel/pytest-ansible-playbook-runner',
     description='Pytest fixture which runs given ansible playbook file.',
     long_description=read('README.md'),
+    long_description_content_type='text/markdown',
     py_modules=['pytest_ansible_playbook'],
     install_requires=['pytest>=3.1.0', 'playbook_runner'],
     classifiers=[
