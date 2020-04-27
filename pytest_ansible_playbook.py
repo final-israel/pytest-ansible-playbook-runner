@@ -179,7 +179,7 @@ class PytestAnsiblePlaybook(playbook_runner.AnsiblePlaybook):
             if 'file' not in playbook:
                 raise Exception(get_missing_file_error("setup", playbook))
 
-            extra_vars = {}
+            extra_vars = {"session_uuid": self.session_uuid}
             if 'extra_vars' in playbook:
                 for k, v in playbook['extra_vars'].items():
                     extra_vars[k] = v
@@ -192,7 +192,7 @@ class PytestAnsiblePlaybook(playbook_runner.AnsiblePlaybook):
             if 'file' not in playbook:
                 raise Exception(get_missing_file_error("teardown", playbook))
 
-            extra_vars = {}
+            extra_vars = {"session_uuid": self.session_uuid}
             if 'extra_vars' in playbook:
                 for k, v in playbook['extra_vars'].items():
                     extra_vars[k] = v
