@@ -4,7 +4,7 @@
 import os
 import codecs
 from setuptools import setup
-
+import version
 
 def read(fname):
     file_path = os.path.join(os.path.dirname(__file__), fname)
@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name='pytest-ansible-playbook-runner',
-    version='0.0.5',
+    version=version.version,
     author='Martin Bukatovič',
     author_email='mbukatov@redhat.com',
     maintainer='Pavel Rogovoy',
@@ -24,7 +24,7 @@ setup(
     long_description=read('README.md'),
     long_description_content_type='text/markdown',
     py_modules=['pytest_ansible_playbook'],
-    install_requires=['pytest>=3.1.0', 'playbook_runner'],
+    install_requires=['pytest>=3.1.0', 'playbook_runner>=0.1.0'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Framework :: Pytest',
