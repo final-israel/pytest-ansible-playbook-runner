@@ -174,6 +174,16 @@ class PytestAnsiblePlaybook(playbook_runner.AnsiblePlaybook):
             # extend because multiple mark entries are supported
             self._teardown_playbooks.extend(list(marker.args))
 
+    def run_playbook(self, play_filename, extra_vars_dict=None):
+        if extra_vars_dict is None:
+            extra_vars_dict = {}
+        ret = playbook_runner.AnsiblePlaybook.run_playbook(self, play_filename, extra_vars_dict)
+        if 'skip_errors' not in extra_vars_dict or \
+                not extra_vars_dict['skip_errors']:
+            assert ret == 0
+
+        return self.get_output()
+
     def setup(self):
         for playbook in self._setup_playbooks:
             if 'file' not in playbook:

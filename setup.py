@@ -24,7 +24,7 @@ setup(
     long_description=read('README.md'),
     long_description_content_type='text/markdown',
     py_modules=['pytest_ansible_playbook'],
-    install_requires=['pytest>=3.1.0', 'playbook_runner>=0.1.0'],
+    install_requires=['pytest>=3.1.0', 'playbook_runner>=0.1.5'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Framework :: Pytest',
