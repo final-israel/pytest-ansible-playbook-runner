@@ -322,3 +322,17 @@ def ansible_playbook(request, ansible_playbook_directory,
     pap.fill_from_markers()
     with runner(pap, skip_teardown):
         yield pap
+
+
+@pytest.fixture(scope='session')
+def ansible_playbook_session(request, ansible_playbook_directory,
+                     ansible_playbook_inventory, session_uuid):
+    pap = PytestAnsiblePlaybook(
+        ansible_playbook_inventory,
+        ansible_playbook_directory,
+        request,
+        session_uuid,
+    )
+
+    with runner(pap, False):
+        yield pap
